@@ -69,8 +69,8 @@ const DonorMatching = () => {
             <div className="space-y-6">
                 <div className="flex justify-between items-center bg-white p-6 rounded-[32px] shadow-sm border border-gray-100">
                     <div>
-                        <h2 className="text-3xl font-black text-gray-800 tracking-tighter italic">Heroes Found</h2>
-                        <p className="text-sm font-bold text-red-600 uppercase tracking-widest">Blood Group: {data.request.blood}</p>
+                        <h2 className="text-3xl font-black text-gray-800 tracking-tighter italic text-red-600">Heroes Found</h2>
+                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Needed Group: {data.request.blood}</p>
                     </div>
                     <button onClick={() => navigate('/requester-dashboard')} className="bg-gray-50 p-3 rounded-full hover:bg-red-50 text-gray-400 hover:text-red-600 transition">
                         <ArrowLeft size={24} />
@@ -83,20 +83,29 @@ const DonorMatching = () => {
                             <div className="flex justify-between items-start">
                                 <div className="flex gap-4">
                                     <div className="bg-slate-50 w-16 h-16 rounded-3xl flex items-center justify-center group-hover:bg-red-50 transition">
-                                        <Heart className="text-red-600" fill={donor.match > 80 ? 'currentColor' : 'none'} size={28} />
+                                        <Heart className="text-red-600" fill={donor.match > 85 ? 'currentColor' : 'none'} size={28} />
                                     </div>
                                     <div>
-                                        <h4 className="font-black text-gray-800 text-xl">{donor.name}</h4>
-                                        <div className="flex flex-col gap-1 mt-1">
-                                            <div className="flex items-center gap-4">
-                                                <span className="text-[10px] font-black text-gray-400 flex items-center gap-1 uppercase">
-                                                    <MapPin size={12}/> {donor.distance} KM
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <h4 className="font-black text-gray-800 text-xl leading-none">{donor.name}</h4>
+                                            <span className={`text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest ${donor.isExact ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>
+                                                {donor.isExact ? 'Exact Match' : 'Compatible'}
+                                            </span>
+                                        </div>
+                                        
+                                        <div className="flex flex-col gap-1 mt-2">
+                                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                                                Donor Group: <span className="text-red-600 font-bold">{donor.blood}</span>
+                                            </p>
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-[10px] font-black text-gray-400 flex items-center gap-1 uppercase bg-slate-50 px-2 py-0.5 rounded-md">
+                                                    <MapPin size={10} className="text-red-500"/> {donor.distance} KM
                                                 </span>
-                                                <span className="text-[10px] font-black text-gray-400 flex items-center gap-1 uppercase border-l pl-4">
-                                                    <Activity size={12}/> {donor.healthScore}% Health
+                                                <span className="text-[10px] font-black text-gray-400 flex items-center gap-1 uppercase bg-slate-50 px-2 py-0.5 rounded-md">
+                                                    <Activity size={10} className="text-green-500"/> {donor.healthScore}%
                                                 </span>
                                             </div>
-                                            {/* CALL LINK - Now safe with Phone import */}
+                                            {/* CALL LINK */}
                                             <a href={`tel:${donor.phone}`} className="text-xs font-bold text-blue-600 flex items-center gap-1 mt-1 hover:underline">
                                                 <Phone size={12} fill="currentColor"/> {donor.phone}
                                             </a>
@@ -104,18 +113,18 @@ const DonorMatching = () => {
                                     </div>
                                 </div>
                                 <div className="text-center">
-                                    <div className="text-3xl font-black text-green-600">{donor.match}%</div>
+                                    <div className={`text-3xl font-black ${donor.match > 80 ? 'text-green-600' : 'text-orange-500'}`}>{donor.match}%</div>
                                     <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest">Match</p>
                                 </div>
                             </div>
 
-                            <div className="mt-6 flex items-center justify-between border-t pt-4">
-                                <p className="text-xs font-bold text-gray-400 tracking-widest">ID: #{donor.unique_id}</p>
+                            <div className="mt-6 flex items-center justify-between border-t border-dashed pt-4">
+                                <p className="text-[10px] font-bold text-gray-300 tracking-widest uppercase italic">ID: #{donor.unique_id}</p>
                                 <button 
                                     onClick={() => sendRequest(donor.unique_id)}
-                                    className="bg-gray-900 text-white px-8 py-3.5 rounded-2xl font-black text-sm shadow-xl flex items-center gap-2 hover:bg-red-600 transition active:scale-95"
+                                    className="bg-gray-900 text-white px-8 py-3.5 rounded-2xl font-black text-xs shadow-xl flex items-center gap-2 hover:bg-red-600 transition active:scale-95"
                                 >
-                                    <Send size={16} /> SEND REQUEST
+                                    <Send size={14} /> SEND HELP REQUEST
                                 </button>
                             </div>
                         </div>

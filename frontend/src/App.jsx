@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
+// Components & Global UI
+import ChatBot from './components/ChatBot'; // IMPORTED
 import Navbar from './components/Navbar';
+import BroadcastAlert from './components/BroadcastAlert';
+
+// Pages
 import Home from './pages/Home';
 import DonorRegister from './pages/DonorRegister';
 import RequesterRegister from './pages/RequesterRegister';
 import Login from './pages/Login';
-import DonorMap from './components/DonorMap';
 import PublicProfile from './pages/PublicProfile';
 import DonorDashboard from './pages/DonorDashboard';     
 import RequesterDashboard from './pages/RequesterDashboard'; 
@@ -14,12 +18,14 @@ import BloodRequestForm from './pages/BloodRequestForm';
 import DonorMatching from './pages/DonorMatching';
 import AdminDashboard from './pages/AdminDashboard'; 
 import AdminDetails from './pages/AdminDetails';
+import InventoryManager from './pages/InventoryManager';
+import AdminAnalytics from './pages/AdminAnalytics';
+import CampManager from './pages/CampManager';
+import BlockchainView from './pages/BlockchainView';
 
 function App() {
-  // Initial state-ah localStorage-la irundhu edukkuroam
   const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem('lifedrop_user');
-    
     try {
         return savedUser ? JSON.parse(savedUser) : null;
     } catch (e) {
@@ -27,7 +33,6 @@ function App() {
     }
   });
 
-  // User state maarum pothu localStorage-la update panroam
   useEffect(() => {
     if (user) {
       localStorage.setItem('lifedrop_user', JSON.stringify(user));
@@ -44,9 +49,13 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+      <div className="min-h-screen bg-slate-50 flex flex-col font-sans relative">
         <Navbar user={user} handleLogout={handleLogout} />
         
+        {/* GLOBAL UI ELEMENTS */}
+        <BroadcastAlert />
+        <ChatBot /> {/* <--- INTHAI LINE-AH ADD PANNIYIRUKKEN NANBA */}
+
         <main className="flex-grow pt-4">
           <Routes>
             {/* Public Routes */}
@@ -72,15 +81,13 @@ function App() {
              element={user && user.role === 'requester' ? <BloodRequestForm user={user} /> : <Navigate to="/login" />} 
             />
 
-            {/* Find Donors Map - Protected */}
-            <Route 
-              path="/find" 
-              element={user ? <DonorMap user={user} /> : <Navigate to="/login" />} 
-            />
+            {/* Find Donors Map & Matching */}
             <Route 
               path="/matching/:id" 
               element={user ? <DonorMatching user={user} /> : <Navigate to="/login" />} 
             />
+
+            {/* Admin Portal - Protected */}
             <Route 
               path="/admin-dashboard" 
               element={user && user.role === 'admin' ? <AdminDashboard /> : <Navigate to="/login" />} 
@@ -89,6 +96,19 @@ function App() {
               path="/admin/details/:category" 
               element={user && user.role === 'admin' ? <AdminDetails /> : <Navigate to="/login" />} 
             />
+            <Route 
+              path="/admin/inventory" 
+              element={user && user.role === 'admin' ? <InventoryManager /> : <Navigate to="/login" />} 
+            />
+            <Route 
+              path="/admin/analytics" 
+              element={user && user.role === 'admin' ? <AdminAnalytics /> : <Navigate to="/login" />} 
+            />
+            <Route 
+              path="/admin/camps" 
+              element={user && user.role === 'admin' ? <CampManager /> : <Navigate to="/login" />} 
+            />
+            <Route path="/blockchain/:id" element={<BlockchainView />} />
           </Routes>
         </main>
 
