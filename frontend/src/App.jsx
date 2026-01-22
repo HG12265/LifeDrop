@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
-// Components & Global UI
-import ChatBot from './components/ChatBot'; // IMPORTED
+// --- Components & Global UI ---
 import Navbar from './components/Navbar';
+import Footer from './components/Footer'; // PUDHU COMPONENT
+import ChatBot from './components/ChatBot';
 import BroadcastAlert from './components/BroadcastAlert';
 
-// Pages
+// --- Pages ---
 import Home from './pages/Home';
 import DonorRegister from './pages/DonorRegister';
 import RequesterRegister from './pages/RequesterRegister';
@@ -22,8 +23,10 @@ import InventoryManager from './pages/InventoryManager';
 import AdminAnalytics from './pages/AdminAnalytics';
 import CampManager from './pages/CampManager';
 import BlockchainView from './pages/BlockchainView';
+import Contact from './pages/Contact';
 
 function App() {
+  // --- User Session Logic (LocalStorage Sync) ---
   const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem('lifedrop_user');
     try {
@@ -42,36 +45,42 @@ function App() {
   }, [user]);
 
   const handleLogout = () => {
-    setUser(null);
-    localStorage.removeItem('lifedrop_user');
-    alert("Logged out!");
+    if(window.confirm("Are you sure you want to logout?")) {
+        setUser(null);
+        localStorage.removeItem('lifedrop_user');
+        alert("Logged out successfully!");
+    }
   };
 
   return (
     <Router>
       <div className="min-h-screen bg-slate-50 flex flex-col font-sans relative">
-        <Navbar user={user} handleLogout={handleLogout} />
         
-        {/* GLOBAL UI ELEMENTS */}
+        {/* Fixed & Global UI Elements */}
+        <Navbar user={user} handleLogout={handleLogout} />
         <BroadcastAlert />
-        <ChatBot /> {/* <--- INTHAI LINE-AH ADD PANNIYIRUKKEN NANBA */}
+        <ChatBot />
 
-        <main className="flex-grow pt-4">
+        {/* Main Content Area */}
+        <main className="flex-grow pt-24 md:pt-28">
+          
           <Routes>
-            {/* Public Routes */}
+            {/* 1. Public Routes */}
             <Route path="/" element={<Home />} />
             <Route path="/register-donor" element={<DonorRegister />} />
             <Route path="/register-requester" element={<RequesterRegister />} />
             <Route path="/login" element={<Login setUser={setUser} />} />
             <Route path="/profile/:id" element={<PublicProfile />} />
+            <Route path="/blockchain/:id" element={<BlockchainView />} />
+            <Route path="/contact" element={<Contact />} />
 
-            {/* Donor Dashboard - Protected */}
+            {/* 2. Donor Protected Routes */}
             <Route 
               path="/donor-dashboard" 
               element={user && user.role === 'donor' ? <DonorDashboard user={user} /> : <Navigate to="/login" />} 
             />
 
-            {/* Requester Dashboard - Protected */}
+            {/* 3. Requester Protected Routes */}
             <Route 
               path="/requester-dashboard" 
               element={user && user.role === 'requester' ? <RequesterDashboard user={user} /> : <Navigate to="/login" />} 
@@ -80,14 +89,12 @@ function App() {
              path="/new-request" 
              element={user && user.role === 'requester' ? <BloodRequestForm user={user} /> : <Navigate to="/login" />} 
             />
-
-            {/* Find Donors Map & Matching */}
             <Route 
               path="/matching/:id" 
               element={user ? <DonorMatching user={user} /> : <Navigate to="/login" />} 
             />
 
-            {/* Admin Portal - Protected */}
+            {/* 4. Admin Portal Protected Routes */}
             <Route 
               path="/admin-dashboard" 
               element={user && user.role === 'admin' ? <AdminDashboard /> : <Navigate to="/login" />} 
@@ -108,13 +115,15 @@ function App() {
               path="/admin/camps" 
               element={user && user.role === 'admin' ? <CampManager /> : <Navigate to="/login" />} 
             />
-            <Route path="/blockchain/:id" element={<BlockchainView />} />
+
+            {/* Catch-all: Redirect to Home */}
+            <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </main>
 
-        <footer className="bg-white border-t py-8 text-center text-gray-400 text-sm mt-10">
-          <p>© 2024 LifeDrop - Every Drop Counts 💧</p>
-        </footer>
+        {/* Premium Footer Component */}
+        <Footer />
+        
       </div>
     </Router>
   );

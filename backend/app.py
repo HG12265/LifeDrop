@@ -896,5 +896,46 @@ def check_donor_cooldowns():
     db.session.commit()
     return jsonify({"message": f"Sent {len(eligible_donors)} reminders!"})
 
+# --- API to Handle User Contact/Suggestions ---
+@app.route('/api/contact', methods=['POST'])
+def handle_contact_form():
+    data = request.json
+    user_name = data.get('name')
+    user_email = data.get('email')
+    user_msg = data.get('message')
+
+    url = "https://api.brevo.com/v3/smtp/email"
+    headers = {
+        "accept": "application/json",
+        "api-key": BREVO_API_KEY,
+        "content-type": "application/json"
+    }
+    
+    # Admin-ku anuppa pora content
+    payload = {
+        "sender": {"name": "LifeDrop System", "email": SENDER_EMAIL},
+        "to": [{"email": "lifedrop108@gmail.com"}], # Admin Mail
+        "subject": f"New User Suggestion from {user_name}",
+        "htmlContent": f"""
+            <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                <h2 style="color: #dc2626;">New Message Received 📩</h2>
+                <p><b>User Name:</b> {user_name}</p>
+                <p><b>User Email:</b> {user_email}</p>
+                <hr/>
+                <p><b>Message/Suggestion:</b></p>
+                <p style="background: #f9fafb; padding: 15px; border-radius: 8px;">{user_msg}</p>
+            </div>
+        """
+    }
+
+    try:
+        response = requests.post(url, json=payload, headers=headers)
+        if response.status_code <= 202:
+            return jsonify({"message": "Message sent to Admin!"}), 200
+        else:
+            return jsonify({"message": "Error sending mail"}), 500
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
