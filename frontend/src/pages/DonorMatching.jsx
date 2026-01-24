@@ -106,9 +106,10 @@ const DonorMatching = () => {
                                                 </span>
                                             </div>
                                             {/* CALL LINK */}
-                                            <a href={`tel:${donor.phone}`} className="text-xs font-bold text-blue-600 flex items-center gap-1 mt-1 hover:underline">
-                                                <Phone size={12} fill="currentColor"/> {donor.phone}
-                                            </a>
+                      <div className="text-xs font-bold text-slate-400 flex items-center gap-1 mt-1">
+                          <Phone size={12} /> {donor.phone}
+                          <span className="text-[8px] font-black bg-slate-100 px-1.5 py-0.5 rounded ml-1 text-slate-400">MASKED</span>
+                      </div>
                                         </div>
                                     </div>
                                 </div>

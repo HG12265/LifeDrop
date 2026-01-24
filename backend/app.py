@@ -3,11 +3,14 @@ from flask_cors import CORS
 from datetime import datetime, timedelta
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask_talisman import Talisman
 import os
 import random
 import math
 import string
-import requests # Requests library irukanum
+import requests 
 from threading import Thread
 import hashlib
 import json
@@ -24,6 +27,8 @@ app.config.update(
     SESSION_COOKIE_SECURE=False # Production-la True-ah mathanum
 )
 
+Talisman(app, content_security_policy=None, force_https=False)
+
 BREVO_API_KEY = os.getenv("BREVO_API_KEY") 
 SENDER_EMAIL = "lifedrop108@gmail.com"
 
@@ -32,8 +37,19 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={GEMINI_API_KEY}"
 
 # Database
-db_path = os.path.join(os.path.dirname(__file__), 'lifedrop.db')
-app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
+db_url = os.getenv("DATABASE_URL")
+
+if db_url:
+    # Render logic: postgres:// -> postgresql:// conversion
+    if db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql://", 1)
+else:
+    # Local-la run panna fallback (SQLite for testing)
+    db_url = "sqlite:///lifedrop.db"
+
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
 db = SQLAlchemy(app)
 
 class Donor(db.Model):
@@ -116,6 +132,20 @@ class OTPVerification(db.Model):
     email = db.Column(db.String(100), nullable=False)
     otp = db.Column(db.String(4), nullable=False)
     timestamp = db.Column(db.DateTime, default=db.func.current_timestamp())  
+    
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["200 per day", "50 per hour"], # General limits
+    storage_uri="memory://"
+)
+
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    return jsonify({
+        "success": False,
+        "message": "Too many attempts! You are blocked for 10 minutes for security reasons."
+    }), 429
     
 def send_brevo_otp(email, otp):
     url = "https://api.brevo.com/v3/smtp/email"
@@ -254,6 +284,7 @@ def add_blockchain_block(request_id, event, data_dict):
 
             
 @app.route('/register/donor', methods=['POST'])
+@limiter.limit("10 per 10 minutes")
 def register_donor():
     data = request.json
     u_id = generate_unique_id(Donor)
@@ -275,6 +306,7 @@ def register_donor():
     return jsonify({"message": "Donor Registered Successfully", "unique_id": u_id}), 201
 
 @app.route('/register/requester', methods=['POST'])
+@limiter.limit("10 per 10 minutes")
 def register_requester():
     data = request.json
     # UNIQUE ID GENERATION MUKKIYAM
@@ -295,6 +327,7 @@ def register_requester():
 
 # 1. API to Generate & Send OTP (Database logic)
 @app.route('/api/verify/send-otp', methods=['POST'])
+@limiter.limit("10 per 10 minutes")
 def send_otp_request():
     data = request.json
     email = data.get('email')
@@ -319,6 +352,7 @@ def send_otp_request():
 
 # 2. API to Verify OTP (Database logic)
 @app.route('/api/check-otp', methods=['POST'])
+@limiter.limit("10 per 10 minutes")
 def check_otp_request():
     data = request.json
     email = data.get('email')
@@ -340,6 +374,7 @@ def check_otp_request():
         return jsonify({"success": False, "message": "Invalid or Expired OTP!"}), 400
 
 @app.route('/login', methods=['POST'])
+@limiter.limit("10 per 10 minutes")
 def login():
     data = request.json
     email = data['email']
@@ -396,13 +431,28 @@ def get_request_history(u_id):
     requests = BloodRequest.query.filter_by(requester_id=u_id).order_by(BloodRequest.timestamp.desc()).all()
     output = []
     for r in requests:
+        # Intha request-ah accept panna donor details-ah edukuroam
+        donor_info = None
+        # Check if any donor accepted this request
+        accepted_notif = Notification.query.filter_by(request_id=r.id).filter(Notification.status.in_(['Accepted', 'Donated', 'Completed'])).first()
+        
+        if accepted_notif:
+            donor = Donor.query.filter_by(unique_id=accepted_notif.donor_id).first()
+            if donor:
+                donor_info = {
+                    "name": donor.full_name,
+                    "phone": donor.phone, # Reveal the full number here!
+                    "status": accepted_notif.status
+                }
+
         output.append({
             "id": r.id,
             "bloodGroup": r.blood_group,
             "status": r.status,
             "patient": r.patient_name,
             "hospital": r.hospital,
-            "date": r.timestamp.strftime("%d %b, %Y")
+            "date": r.timestamp.strftime("%d %b, %Y"),
+            "accepted_donor": donor_info # Intha data-va sethu anupuroam
         })
     return jsonify(output)
     
@@ -454,9 +504,11 @@ BLOOD_COMPATIBILITY = {
 @app.route('/api/match-donors/<int:request_id>', methods=['GET'])
 def match_donors(request_id):
     req = BloodRequest.query.get(request_id)
-    if not req: return jsonify({"message": "Not Found"}), 404
+    if not req: 
+        return jsonify({"message": "Not Found"}), 404
     
     # 1. Fetch allowed donor groups (Science logic)
+    # Global BLOOD_COMPATIBILITY dictionary use aagum
     allowed_donor_groups = BLOOD_COMPATIBILITY.get(req.blood_group, [req.blood_group])
 
     # 2. 90-Days Cooldown Limit
@@ -470,6 +522,11 @@ def match_donors(request_id):
 
     matches = []
     for d in donors:
+        # --- DATA MASKING (Privacy Logic) ---
+        raw_phone = d.phone
+        # Example: 98******21
+        masked_phone = raw_phone[:2] + "******" + raw_phone[-2:] if len(raw_phone) > 4 else raw_phone
+
         # Distance calculation
         dist = calculate_distance(req.lat, req.lng, d.lat, d.lng)
         dist_score = max(0, 100 - (dist * 2)) 
@@ -477,7 +534,8 @@ def match_donors(request_id):
         # Match percentage logic
         is_exact = (d.blood_group == req.blood_group)
         match_percent = (dist_score * 0.6) + (d.health_score * 0.4)
-        if is_exact: match_percent += 5 # Bonus
+        if is_exact: 
+            match_percent += 5 # Bonus for exact match
         
         # Final Score Cap to 100
         final_match = min(round(match_percent), 100)
@@ -488,7 +546,7 @@ def match_donors(request_id):
             "distance": round(dist, 1),
             "healthScore": d.health_score,
             "match": final_match,
-            "phone": d.phone,
+            "phone": masked_phone, # FIX: Added missing quote
             "blood": d.blood_group, 
             "lat": d.lat,
             "lng": d.lng,
@@ -497,7 +555,10 @@ def match_donors(request_id):
 
     # Sort: Best match on top
     matches = sorted(matches, key=lambda x: x['match'], reverse=True)
-    return jsonify({"request": {"lat": req.lat, "lng": req.lng, "blood": req.blood_group}, "matches": matches})
+    return jsonify({
+        "request": {"lat": req.lat, "lng": req.lng, "blood": req.blood_group}, 
+        "matches": matches
+    })
 
 @app.route('/api/send-request', methods=['POST'])
 def send_notification():
