@@ -282,6 +282,13 @@ def add_blockchain_block(request_id, event, data_dict):
     db.session.add(new_block)
     db.session.commit()
 
+@app.route('/')
+def home():
+    return jsonify({
+        "status": "online",
+        "message": "LifeDrop Backend is running 🚀",
+        "version": "1.0.0"
+    }), 200
             
 @app.route('/register/donor', methods=['POST'])
 @limiter.limit("10 per 10 minutes")
