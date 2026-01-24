@@ -36,7 +36,7 @@ const DonorRegister = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}`/api/verify/send-otp', {
+      const res = await fetch(`${API_URL}/api/verify/send-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: formData.email })
