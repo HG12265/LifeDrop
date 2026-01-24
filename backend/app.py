@@ -60,12 +60,31 @@ class Donor(db.Model):
     password = db.Column(db.String(255), nullable=False)
     blood_group = db.Column(db.String(10))
     dob = db.Column(db.String(20))
+    gender = db.Column(db.String(10)) # Male, Female, Other
+    
+    # 1. Chronic Conditions (Permanent Filters)
+    has_hiv_hepa = db.Column(db.Boolean, default=False)
+    has_cancer_history = db.Column(db.Boolean, default=False)
+    has_heart_disease = db.Column(db.Boolean, default=False)
+    
+    # 2. Temporary Recovery Dates (Date-based Logic)
+    last_donation_date = db.Column(db.DateTime, nullable=True)
+    last_tattoo_date = db.Column(db.DateTime, nullable=True) # 6 months
+    last_surgery_date = db.Column(db.DateTime, nullable=True) # 6 months
+    last_fever_date = db.Column(db.DateTime, nullable=True)   # 2 weeks
+    last_antibiotic_date = db.Column(db.DateTime, nullable=True) # 7 days
+    
+    # 3. Female Specific Guards
+    is_pregnant = db.Column(db.Boolean, default=False)
+    is_breastfeeding = db.Column(db.Boolean, default=False)
+    last_delivery_date = db.Column(db.DateTime, nullable=True) # 12 months recovery
+    
+    # Existing Fields
     lat = db.Column(db.Float)
     lng = db.Column(db.Float)
     health_score = db.Column(db.Integer)
     unique_id = db.Column(db.String(4), unique=True)
-    last_donation_date = db.Column(db.DateTime, nullable=True) 
-    donation_count = db.Column(db.Integer, default=0) 
+    donation_count = db.Column(db.Integer, default=0)
     cooldown_email_sent = db.Column(db.Boolean, default=False)
 
 class Requester(db.Model):
@@ -502,7 +521,7 @@ BLOOD_COMPATIBILITY = {
     "A-": ["A-", "O-"],
     "B+": ["B+", "B-", "O+", "O-"],
     "B-": ["B-", "O-"],
-    "AB+": ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"], # Universal Receiver
+    "AB+": ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"], 
     "AB-": ["A-", "B-", "O-", "AB-"],
     "O+": ["O+", "O-"],
     "O-": ["O-"]
@@ -514,37 +533,46 @@ def match_donors(request_id):
     if not req: 
         return jsonify({"message": "Not Found"}), 404
     
-    # 1. Fetch allowed donor groups (Science logic)
-    # Global BLOOD_COMPATIBILITY dictionary use aagum
+    now = datetime.utcnow()
+    ninety_days = now - timedelta(days=90)  
+    six_months = now - timedelta(days=180)  
+    two_weeks = now - timedelta(days=14)     
+    one_week = now - timedelta(days=7)       
+    one_year = now - timedelta(days=365)    
     allowed_donor_groups = BLOOD_COMPATIBILITY.get(req.blood_group, [req.blood_group])
-
-    # 2. 90-Days Cooldown Limit
-    cooldown_limit = datetime.utcnow() - timedelta(days=90)
     
-    # 3. Filter Query (Compatible + Active)
     donors = Donor.query.filter(
         Donor.blood_group.in_(allowed_donor_groups),
-        (Donor.last_donation_date == None) | (Donor.last_donation_date <= cooldown_limit)
+        
+        Donor.has_hiv_hepa == False,
+        Donor.has_cancer_history == False,
+        Donor.has_heart_disease == False,
+        
+        Donor.is_pregnant == False,
+        Donor.is_breastfeeding == False,
+        (Donor.last_delivery_date == None) | (Donor.last_delivery_date <= one_year),
+        
+        (Donor.last_donation_date == None) | (Donor.last_donation_date <= ninety_days),
+        (Donor.last_tattoo_date == None) | (Donor.last_tattoo_date <= six_months),
+        (Donor.last_surgery_date == None) | (Donor.last_surgery_date <= six_months),
+        (Donor.last_fever_date == None) | (Donor.last_fever_date <= two_weeks),
+        (Donor.last_antibiotic_date == None) | (Donor.last_antibiotic_date <= one_week)
     ).all()
 
     matches = []
     for d in donors:
-        # --- DATA MASKING (Privacy Logic) ---
+      
         raw_phone = d.phone
-        # Example: 98******21
         masked_phone = raw_phone[:2] + "******" + raw_phone[-2:] if len(raw_phone) > 4 else raw_phone
 
-        # Distance calculation
         dist = calculate_distance(req.lat, req.lng, d.lat, d.lng)
         dist_score = max(0, 100 - (dist * 2)) 
-        
-        # Match percentage logic
         is_exact = (d.blood_group == req.blood_group)
         match_percent = (dist_score * 0.6) + (d.health_score * 0.4)
-        if is_exact: 
-            match_percent += 5 # Bonus for exact match
         
-        # Final Score Cap to 100
+        if is_exact: 
+            match_percent += 5 
+        
         final_match = min(round(match_percent), 100)
 
         matches.append({
@@ -553,17 +581,21 @@ def match_donors(request_id):
             "distance": round(dist, 1),
             "healthScore": d.health_score,
             "match": final_match,
-            "phone": masked_phone, # FIX: Added missing quote
+            "phone": masked_phone, 
             "blood": d.blood_group, 
             "lat": d.lat,
             "lng": d.lng,
             "isExact": is_exact
         })
 
-    # Sort: Best match on top
     matches = sorted(matches, key=lambda x: x['match'], reverse=True)
+    
     return jsonify({
-        "request": {"lat": req.lat, "lng": req.lng, "blood": req.blood_group}, 
+        "request": {
+            "lat": req.lat, 
+            "lng": req.lng, 
+            "blood": req.blood_group
+        }, 
         "matches": matches
     })
 
@@ -586,7 +618,6 @@ def send_notification():
             "phone": req.contact_number
         }
         
-        # Async-ah mail anupuvom
         Thread(target=send_request_alert_email, args=(donor.email, donor.full_name, req_details)).start()
         db.session.commit()
         return jsonify({"message": "Request sent successfully!"}), 201
