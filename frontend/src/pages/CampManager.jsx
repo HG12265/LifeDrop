@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { API_URL } from '../config'; 
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, MapPin, Clock, Plus, Trash2, Tent } from 'lucide-react';
 
@@ -8,14 +9,14 @@ const CampManager = () => {
   const [formData, setFormData] = useState({ title: '', location: '', city: '', date: '', time: '' });
 
   const fetchCamps = () => {
-    fetch('http://localhost:5000/api/camps/all').then(res => res.json()).then(data => setCamps(data));
+    fetch(`${API_URL}/api/camps/all`).then(res => res.json()).then(data => setCamps(data));
   };
 
   useEffect(() => { fetchCamps(); }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const res = await fetch('http://localhost:5000/api/admin/camps/create', {
+    const res = await fetch(`${API_URL}/api/admin/camps/create`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(formData)
@@ -29,7 +30,7 @@ const CampManager = () => {
 
   const handleDelete = async (id) => {
     if(!window.confirm("Delete this camp?")) return;
-    const res = await fetch(`http://localhost:5000/api/admin/camps/delete/${id}`, { method: 'DELETE' });
+    const res = await fetch(`${API_URL}/api/admin/camps/delete/${id}`, { method: 'DELETE' });
     if(res.ok) fetchCamps();
   };
 

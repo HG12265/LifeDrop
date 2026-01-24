@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { API_URL } from '../config'; 
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title } from 'chart.js';
 import { Doughnut, Bar } from 'react-chartjs-2';
 import { ArrowLeft, TrendingUp, Users, Activity, Heart } from 'lucide-react';
@@ -11,7 +12,7 @@ const AdminAnalytics = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/admin/analytics')
+    fetch(`${API_URL}/api/admin/analytics`)
       .then(res => res.json())
       .then(val => setData(val));
   }, []);

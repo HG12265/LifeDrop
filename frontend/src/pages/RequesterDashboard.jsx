@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { API_URL } from '../config'; 
 import { 
   Plus, Clock, CheckCircle2, MapPin, History, 
   Droplet, Truck, AlertCircle, Link2, ShieldCheck, Phone 
@@ -12,7 +13,7 @@ const RequesterDashboard = ({ user }) => {
 
   // 1. Data Fetching Logic (Sync with Backend Reveal API)
   const fetchHistory = () => {
-    fetch(`http://localhost:5000/api/requester/history/${user.unique_id}`)
+    fetch(`${API_URL}/api/requester/history/${user.unique_id}`)
       .then(res => res.json())
       .then(data => {
         setHistory(data);
@@ -36,7 +37,7 @@ const RequesterDashboard = ({ user }) => {
   const handleComplete = async (reqId) => {
     if(!window.confirm("Confirm that you have received the blood? This will close the case.")) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/request/complete/${reqId}`, {
+      const res = await fetch(`${API_URL}/api/request/complete/${reqId}`, {
         method: 'POST',
       });
       if (res.ok) {

@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
+import { API_URL } from '../config'; 
 import { Megaphone, X } from 'lucide-react';
 
 const BroadcastAlert = () => {
   const [alerts, setAlerts] = useState([]);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/broadcasts')
+    fetch(`${API_URL}/api/broadcasts`)
       .then(res => res.json())
       .then(data => setAlerts(data));
   }, []);

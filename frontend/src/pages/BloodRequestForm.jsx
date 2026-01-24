@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API_URL } from '../config'; 
 import { useNavigate } from 'react-router-dom';
 import LocationPicker from '../components/LocationPicker';
 import { AlertCircle, ArrowLeft } from 'lucide-react';
@@ -31,7 +32,7 @@ const handleSubmit = async (e) => {
   console.log("Sending Data to Backend:", finalData);
 
   try {
-    const res = await fetch('http://localhost:5000/api/request/create', {
+    const res = await fetch(`${API_URL}/api/request/create`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(finalData)

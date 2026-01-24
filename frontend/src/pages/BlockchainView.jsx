@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { API_URL } from '../config'; 
 import { useParams } from 'react-router-dom';
 import { Link2, ShieldCheck, Clock, Hash } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
@@ -9,7 +10,7 @@ const BlockchainView = () => {
   const trackingUrl = window.location.href;
 
   useEffect(() => {
-    fetch(`http://localhost:5000/api/blockchain/view/${id}`)
+    fetch(`${API_URL}/api/blockchain/view/${id}`)
       .then(res => res.json())
       .then(data => setChain(data));
   }, [id]);

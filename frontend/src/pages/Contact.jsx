@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API_URL } from '../config'; 
 import { Mail, User, MessageSquare, Send, ArrowRight, ShieldCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -11,7 +12,7 @@ const Contact = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/contact', {
+      const res = await fetch(`${API_URL}/api/contact`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { API_URL } from '../config'; 
 import { useNavigate } from 'react-router-dom';
 import { 
   Users, Droplets, Activity, Clock, Megaphone, 
@@ -15,7 +16,7 @@ const AdminDashboard = () => {
 
   // 1. Fetch System Stats & Activity
   const fetchAdminData = () => {
-    fetch('http://localhost:5000/api/admin/stats')
+    fetch(`${API_URL}/api/admin/stats`)
       .then(res => res.json())
       .then(val => setData(val))
       .catch(err => console.error("Admin fetch error:", err));
@@ -23,7 +24,7 @@ const AdminDashboard = () => {
 
   // 2. Fetch All Sent Broadcasts
   const fetchBroadcasts = () => {
-    fetch('http://localhost:5000/api/broadcasts')
+    fetch(`${API_URL}/api/broadcasts`)
       .then(res => res.json())
       .then(data => setAllBroadcasts(data))
       .catch(err => console.error("Broadcast fetch error:", err));
@@ -43,7 +44,7 @@ const AdminDashboard = () => {
   const sendBroadcast = async () => {
     if(!broadcastMsg.trim()) return alert("Please type a message!");
     
-    const res = await fetch('http://localhost:5000/api/admin/broadcast', {
+    const res = await fetch(`${API_URL}/api/admin/broadcast`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: broadcastMsg })
@@ -60,7 +61,7 @@ const AdminDashboard = () => {
   const deleteBroadcast = async (id) => {
     if(!window.confirm("Remove this alert from all users?")) return;
     
-    const res = await fetch(`http://localhost:5000/api/broadcast/delete/${id}`, {
+    const res = await fetch(`${API_URL}/api/broadcast/delete/${id}`, {
       method: 'DELETE'
     });
     if(res.ok) fetchBroadcasts();

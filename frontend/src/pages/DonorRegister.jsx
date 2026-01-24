@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_URL } from '../config'; 
 import { useNavigate } from 'react-router-dom';
 import LocationPicker from '../components/LocationPicker';
 import SuccessModal from '../components/SuccessModal';
@@ -35,7 +36,7 @@ const DonorRegister = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/verify/send-otp', {
+      const res = await fetch(`${API_URL}`/api/verify/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: formData.email })
@@ -62,7 +63,7 @@ const DonorRegister = () => {
     };
 
     try {
-      const res = await fetch('http://localhost:5000/register/donor', {
+      const res = await fetch(`${API_URL}/register/donor`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(finalData)

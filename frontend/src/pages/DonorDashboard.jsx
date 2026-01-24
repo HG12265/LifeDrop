@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { API_URL } from '../config'; 
 import { QRCodeCanvas } from 'qrcode.react';
 import { useNavigate } from 'react-router-dom'; 
 import { 
@@ -19,21 +20,21 @@ const DonorDashboard = ({ user }) => {
   const profileUrl = `${window.location.origin}/profile/${user.unique_id}`;
 
   const fetchAlerts = () => {
-    fetch(`http://localhost:5000/api/donor/targeted-alerts/${user.unique_id}`)
+    fetch(`${API_URL}/api/donor/targeted-alerts/${user.unique_id}`)
       .then(res => res.json())
       .then(data => setNotifications(data))
       .catch(err => console.error("Error alerts:", err));
   };
 
   const fetchStats = () => {
-    fetch(`http://localhost:5000/api/donor/profile-stats/${user.unique_id}`)
+    fetch(`${API_URL}/api/donor/profile-stats/${user.unique_id}`)
       .then(res => res.json())
       .then(data => setStats(data))
       .catch(err => console.error("Error stats:", err));
   };
 
   const fetchCamps = () => {
-    fetch('http://localhost:5000/api/camps/all')
+    fetch(`${API_URL}/api/camps/all`)
       .then(res => res.json())
       .then(data => setCamps(data))
       .catch(err => console.error("Error camps:", err));
@@ -51,7 +52,7 @@ const DonorDashboard = ({ user }) => {
   }, [user.unique_id]);
 
   const handleRespond = async (notifId, status) => {
-    const res = await fetch('http://localhost:5000/api/notif/respond', {
+    const res = await fetch(`${API_URL}/api/notif/respond`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ notif_id: notifId, status: status })
@@ -61,7 +62,7 @@ const DonorDashboard = ({ user }) => {
 
   const handleDonate = async (notifId) => {
     if (!bagId) return alert("Please enter Blood Bag Serial Number!");
-    const res = await fetch('http://localhost:5000/api/notif/donate', {
+    const res = await fetch(`${API_URL}/api/notif/donate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ notif_id: notifId, bag_id: bagId })

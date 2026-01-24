@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { API_URL } from '../config'; 
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Minus, Database, RefreshCw, AlertTriangle } from 'lucide-react';
 
@@ -8,7 +9,7 @@ const InventoryManager = () => {
   const [loading, setLoading] = useState(true);
 
   const fetchInventory = () => {
-    fetch('http://localhost:5000/api/admin/inventory')
+    fetch(`${API_URL}/api/admin/inventory`)
       .then(res => res.json())
       .then(data => { setInventory(data); setLoading(false); });
   };
@@ -16,7 +17,7 @@ const InventoryManager = () => {
   useEffect(() => { fetchInventory(); }, []);
 
   const handleUpdate = async (group, action) => {
-    const res = await fetch('http://localhost:5000/api/admin/inventory/update', {
+    const res = await fetch(`${API_URL}/api/admin/inventory/update`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ group, action })

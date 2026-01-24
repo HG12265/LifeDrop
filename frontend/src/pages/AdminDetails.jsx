@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { API_URL } from '../config'; 
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 // Link2 icon-ah import-la add panni irukken nanba
 import { ArrowLeft, MapPin, ShieldCheck, Phone, Search, FileSpreadsheet, FileText, Link2 } from 'lucide-react';
@@ -16,9 +17,9 @@ const AdminDetails = () => {
 
   useEffect(() => {
     let url = '';
-    if (category === 'users') url = 'http://localhost:5000/api/admin/all-users';
-    if (category === 'donors') url = 'http://localhost:5000/api/admin/donors-detailed';
-    if (category === 'requests') url = `http://localhost:5000/api/admin/requests-detailed?type=${type}`;
+    if (category === 'users') url = `${API_URL}/api/admin/all-users`;
+    if (category === 'donors') url = `${API_URL}/api/admin/donors-detailed`;
+    if (category === 'requests') url = `${API_URL}/api/admin/requests-detailed?type=${type}`;
     
     fetch(url).then(res => res.json()).then(data => setList(data));
   }, [category, type]);

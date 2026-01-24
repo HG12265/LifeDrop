@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { API_URL } from '../config'; 
 import { useNavigate } from 'react-router-dom';
 import { 
   Heart, MapPin, Users, ShieldCheck, 
@@ -11,7 +12,7 @@ const Home = () => {
 
   useEffect(() => {
     // Backend-la irundhu live stats edupom
-    fetch('http://localhost:5000/api/admin/analytics')
+    fetch(`${API_URL}/api/admin/analytics`)
       .then(res => res.json())
       .then(data => setStats({ donors: data.total_donors, saves: data.total_saves }))
       .catch(() => setStats({ donors: 25, saves: 12 })); // Fallback dummy data

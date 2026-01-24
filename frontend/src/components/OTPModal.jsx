@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API_URL } from '../config'; 
 import { ShieldCheck, X, RefreshCcw } from 'lucide-react';
 
 const OTPModal = ({ email, onVerify, onClose, onResend }) => {
@@ -8,7 +9,7 @@ const OTPModal = ({ email, onVerify, onClose, onResend }) => {
   const handleCheck = async () => {
     if (otp.length !== 4) return alert("Enter 4 digits!");
     setLoading(true);
-    const res = await fetch('http://localhost:5000/api/check-otp', {
+    const res = await fetch(`${API_URL}/api/check-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 

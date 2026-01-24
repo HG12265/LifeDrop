@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { API_URL } from '../config'; 
 import { useParams, useNavigate } from 'react-router-dom';
 import { Activity, Phone, User, ShieldCheck, MapPin, Calendar, Mail, Droplet, ArrowLeft } from 'lucide-react';
 
@@ -8,7 +9,7 @@ const PublicProfile = () => {
   const [donor, setDonor] = useState(null);
 
   useEffect(() => {
-    fetch(`http://localhost:5000/api/donor/${id}`)
+    fetch(`${API_URL}/api/donor/${id}`)
       .then(res => res.json())
       .then(data => setDonor(data))
       .catch(err => console.error("Error:", err));

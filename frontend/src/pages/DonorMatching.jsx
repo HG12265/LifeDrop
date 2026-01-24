@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { API_URL } from '../config'; 
 import { useParams, useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
 import { ShieldCheck, MapPin, Send, ArrowLeft, Heart, Activity, Phone } from 'lucide-react';
@@ -10,7 +11,7 @@ const DonorMatching = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch(`http://localhost:5000/api/match-donors/${id}`)
+        fetch(`${API_URL}/api/match-donors/${id}`)
             .then(res => res.json())
             .then(val => {
                 setData(val);
@@ -21,7 +22,7 @@ const DonorMatching = () => {
 
     const sendRequest = async (donorId) => {
         try {
-            const res = await fetch('http://localhost:5000/api/send-request', {
+            const res = await fetch(`${API_URL}/api/send-request`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ donor_id: donorId, request_id: id })

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API_URL } from '../config'; 
 import { useNavigate } from 'react-router-dom';
 import { User, Mail, Phone, Lock, ShieldAlert, ArrowRight, UserPlus } from 'lucide-react';
 import OTPModal from '../components/OTPModal';
@@ -14,7 +15,7 @@ const RequesterRegister = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/verify/send-otp', {
+      const res = await fetch(`${API_URL}/api/verify/send-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: formData.email })
@@ -34,7 +35,7 @@ const RequesterRegister = () => {
   // 2. Final Registration Logic (After OTP Success)
   const finalizeRegistration = async () => {
     try {
-      const res = await fetch('http://localhost:5000/register/requester', {
+      const res = await fetch(`${API_URL}/register/requester`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
