@@ -111,7 +111,7 @@ const OTPModal = ({ email, onVerify, onClose, onResend }) => {
                 onClick={onClose}
                 className="mt-4 text-[10px] font-bold text-slate-300 uppercase hover:text-slate-500 transition-colors"
             >
-                Cancel Registration
+                Cancel the Registration
             </button>
         )}
       </div>
