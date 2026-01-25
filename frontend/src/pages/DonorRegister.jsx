@@ -78,10 +78,11 @@ const DonorRegister = () => {
         setShowOTP(false);
         setShowModal(true);
       } else {
-        alert("Registration failed. Please try again.");
+        alert(data.message || "Registration failed. Please try again.");
       }
     } catch (err) {
       alert("Registration error.");
+      throw err;
     } finally {
       setLoading(false);
     }

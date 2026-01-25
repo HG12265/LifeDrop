@@ -52,7 +52,6 @@ const DonorDashboard = ({ user }) => {
     return () => clearInterval(interval);
   }, [user.unique_id]);
 
-  // --- NEW FEATURE: TOGGLE VISIBILITY ---
   const handleToggleStatus = async () => {
     // Cooldown-la irundha switch panna allow panna koodathu
     if (stats.days_remaining > 0) {

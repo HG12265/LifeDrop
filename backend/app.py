@@ -181,7 +181,6 @@ def send_brevo_otp(email, otp):
             print(f"❌ Brevo Error: {response.text}")
     except Exception as e:
         print(f"❌ Email Thread Error: {e}")    
-# 1. Function: Send Email when Requester clicks "Send Request"
 def send_request_alert_email(donor_email, donor_name, req_details):
     url = "https://api.brevo.com/v3/smtp/email"
     headers = {"accept": "application/json", "api-key": BREVO_API_KEY, "content-type": "application/json"}

@@ -33,28 +33,41 @@ const RequesterRegister = () => {
   };
 
   // 2. Final Registration Logic (Runs after OTP verification)
-  const finalizeRegistration = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`${API_URL}/register/requester`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
+const finalizeRegistration = async () => {
+  setLoading(true);
+  try {
+    const res = await fetch(`${API_URL}/register/requester`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData)
+    });
+    
+    const data = await res.json();
+
+    if (res.ok) {
+      // 1. Success aana Modal-ah close pannidalam
+      setShowOTP(false); 
       
-      const data = await res.json();
-      if (res.ok) {
-        alert(`Account Verified! Welcome, Your ID is #${data.unique_id}`);
-        navigate('/login');
-      } else {
-        alert(data.message || "Registration failed.");
-      }
-    } catch (err) {
-      alert("Registration error. Try again.");
-    } finally {
-      setLoading(false);
+      alert(`Account Verified! Welcome, Your ID is #${data.unique_id}`);
+      
+      // 2. Adhukku apram login-ku navigate pannalam
+      navigate('/login');
+    } else {
+      // 3. Backend error vandha alert panni, error-ah throw pannanum
+      alert(data.message || "Registration failed.");
+      throw new Error(data.message || "Registration failed");
     }
-  };
+  } catch (err) {
+    // 4. Network error or throw panna error-ah inga handle panni thirumba throw pannanum
+    // Appo thaan OTP Modal-oda loading stop aagum
+    if (err.message !== "Registration failed") {
+      alert("Registration error. Try again.");
+    }
+    throw err; 
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="max-w-4xl mx-auto p-4 md:p-10 relative animate-in fade-in zoom-in duration-500">

@@ -11,11 +11,11 @@ const Home = () => {
   const [stats, setStats] = useState({ donors: 0, saves: 0 });
 
   useEffect(() => {
-    // Backend-la irundhu live stats edupom
+    
     fetch(`${API_URL}/api/admin/analytics`)
       .then(res => res.json())
       .then(data => setStats({ donors: data.total_donors, saves: data.total_saves }))
-      .catch(() => setStats({ donors: 25, saves: 12 })); // Fallback dummy data
+      .catch(() => setStats({ donors: 25, saves: 12 })); 
   }, []);
 
   return (
