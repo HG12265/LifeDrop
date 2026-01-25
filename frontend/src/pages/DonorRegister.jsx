@@ -4,7 +4,10 @@ import { useNavigate } from 'react-router-dom';
 import LocationPicker from '../components/LocationPicker';
 import SuccessModal from '../components/SuccessModal';
 import OTPModal from '../components/OTPModal'; 
-import { Activity, ShieldCheck, ShieldAlert } from 'lucide-react'; // <--- FIX: Added ShieldAlert
+import { 
+  Activity, ShieldCheck, ShieldAlert, User, Mail, 
+  Phone, Lock, Calendar, Droplet, ArrowRight, UserPlus 
+} from 'lucide-react';
 
 const DonorRegister = () => {
   const navigate = useNavigate();
@@ -22,6 +25,7 @@ const DonorRegister = () => {
     weight: true, alcohol: false, surgery: false, tattoo: false, medication: false
   });
 
+  // Health Score Calculation
   useEffect(() => {
     let score = 100;
     if (!formData.weight) score -= 30;
@@ -53,7 +57,7 @@ const DonorRegister = () => {
     }
   };
 
-  const handleFinalRegister = async () => {
+  const finalizeRegistration = async () => {
     setLoading(true);
     const finalData = {
       ...formData,
@@ -68,9 +72,7 @@ const DonorRegister = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(finalData)
       });
-
       const data = await res.json();
-
       if (res.ok && data.unique_id) {
         setRegisteredId(data.unique_id);
         setShowOTP(false);
@@ -86,80 +88,163 @@ const DonorRegister = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-4 md:p-10 relative">
+    <div className="max-w-7xl mx-auto p-4 md:p-10 relative animate-in fade-in zoom-in duration-500">
       
       {showOTP && (
         <OTPModal 
           email={formData.email} 
-          onVerify={handleFinalRegister} 
+          onVerify={finalizeRegistration} 
           onClose={() => setShowOTP(false)}
           onResend={handleInitialSubmit}
         />
       )}
 
       {showModal && (
-        <SuccessModal 
-          userId={registeredId} 
-          type="donor" 
-          onClose={() => navigate('/login')} 
-        />
+        <SuccessModal userId={registeredId} type="donor" onClose={() => navigate('/login')} />
       )}
 
-      <div className={`bg-white shadow-2xl rounded-[32px] overflow-hidden border border-gray-100 ${(showModal || showOTP) ? 'blur-sm pointer-events-none' : ''}`}>
-        <div className="bg-red-600 p-8 text-white text-center">
-          <h2 className="text-3xl font-black italic">LifeDrop Hero Registration</h2>
-          <p className="opacity-80 text-sm mt-1">Verify your email to join the community</p>
+      <div className={`bg-white shadow-2xl rounded-[48px] overflow-hidden border border-gray-100 ${(showModal || showOTP) ? 'blur-sm pointer-events-none' : ''}`}>
+        
+        {/* Modern Header Section */}
+        <div className="bg-slate-900 p-8 md:p-12 text-white text-center relative overflow-hidden border-b-8 border-red-600">
+            <div className="bg-white/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-md border border-white/10">
+                <UserPlus size={36} className="text-red-500" />
+            </div>
+            <h2 className="text-4xl font-black italic tracking-tighter">Become a Hero</h2>
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mt-2">LifeDrop Hero Registration Portal</p>
+            <div className="absolute top-[-20px] left-[-20px] w-32 h-32 bg-red-600/10 rounded-full blur-3xl"></div>
         </div>
 
-        <form onSubmit={handleInitialSubmit} className="p-6 md:p-10 grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="space-y-4">
-            <h3 className="font-bold text-gray-800 border-b pb-2">Personal Details</h3>
-            <input type="text" placeholder="Full Name" className="w-full p-4 bg-gray-50 rounded-2xl border-none outline-red-200 font-bold" onChange={e => setFormData({...formData, fullName: e.target.value})} required />
-            <input type="tel" placeholder="Phone Number" className="w-full p-4 bg-gray-50 rounded-2xl border-none outline-red-200 font-bold" onChange={e => setFormData({...formData, phone: e.target.value})} required />
-            <input type="email" placeholder="Email Address" className="w-full p-4 bg-gray-50 rounded-2xl border-none outline-red-200 font-bold" onChange={e => setFormData({...formData, email: e.target.value})} required />
-            <input type="password" placeholder="Create Password" className="w-full p-4 bg-gray-50 rounded-2xl border-none outline-red-200 font-bold" onChange={e => setFormData({...formData, password: e.target.value})} required />
+        <form onSubmit={handleInitialSubmit} className="p-6 md:p-12 space-y-12">
+          
+          {/* TOP BLOCK: Identity Details (Responsive Grid) */}
+          <div className="space-y-6">
+            <h3 className="font-black text-gray-800 text-lg flex items-center gap-2 uppercase tracking-tighter border-b pb-2">
+                <User size={18} className="text-red-600"/> Identity Details
+            </h3>
             
-            <div className="grid grid-cols-2 gap-4">
-              <select className="p-4 bg-gray-50 rounded-2xl border-none font-bold" onChange={e => setFormData({...formData, bloodGroup: e.target.value})} required>
-                <option value="">Group</option>
-                {['A+', 'B+', 'O+', 'AB+', 'A-', 'B-', 'O-', 'AB-'].map(bg => <option key={bg} value={bg}>{bg}</option>)}
-              </select>
-              <input type="date" className="p-4 bg-gray-50 rounded-2xl border-none text-gray-400 font-bold" onChange={e => setFormData({...formData, dob: e.target.value})} required />
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+               {/* Full Name */}
+               <div className="space-y-1">
+                  <label className="text-[10px] font-black text-gray-400 uppercase ml-2">Full Name</label>
+                  <div className="relative">
+                    <User className="absolute left-4 top-4 text-gray-400" size={18}/>
+                    <input type="text" placeholder="e.g. John Doe" className="w-full p-4 pl-12 bg-gray-50 rounded-2xl border-none outline-red-200 font-bold transition-all focus:bg-white" onChange={e => setFormData({...formData, fullName: e.target.value})} required />
+                  </div>
+               </div>
+               
+               {/* Phone */}
+               <div className="space-y-1">
+                  <label className="text-[10px] font-black text-gray-400 uppercase ml-2">Phone Number</label>
+                  <div className="relative">
+                    <Phone className="absolute left-4 top-4 text-gray-400" size={18}/>
+                    <input type="tel" placeholder="+91" className="w-full p-4 pl-12 bg-gray-50 rounded-2xl border-none outline-red-200 font-bold transition-all focus:bg-white" onChange={e => setFormData({...formData, phone: e.target.value})} required />
+                  </div>
+               </div>
 
-            <LocationPicker position={position} setPosition={setPosition} />
+               {/* Email */}
+               <div className="space-y-1">
+                  <label className="text-[10px] font-black text-gray-400 uppercase ml-2">Email Address</label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-4 text-gray-400" size={18}/>
+                    <input type="email" placeholder="mail@example.com" className="w-full p-4 pl-12 bg-gray-50 rounded-2xl border-none outline-red-200 font-bold transition-all focus:bg-white" onChange={e => setFormData({...formData, email: e.target.value})} required />
+                  </div>
+               </div>
+
+               {/* Password */}
+               <div className="space-y-1">
+                  <label className="text-[10px] font-black text-gray-400 uppercase ml-2">Security Password</label>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-4 text-gray-400" size={18}/>
+                    <input type="password" placeholder="••••••••" className="w-full p-4 pl-12 bg-gray-50 rounded-2xl border-none outline-red-200 font-bold transition-all focus:bg-white" onChange={e => setFormData({...formData, password: e.target.value})} required />
+                  </div>
+               </div>
+               
+               {/* Blood Group */}
+               <div className="space-y-1">
+                  <label className="text-[10px] font-black text-gray-400 uppercase ml-2">Select Blood Group</label>
+                  <div className="relative">
+                    <Droplet className="absolute left-4 top-4 text-red-500" size={18}/>
+                    <select className="w-full p-4 pl-12 bg-gray-50 rounded-2xl border-none font-bold appearance-none cursor-pointer focus:bg-white" onChange={e => setFormData({...formData, bloodGroup: e.target.value})} required>
+                        <option value="">Choose Group</option>
+                        {['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'].map(bg => <option key={bg} value={bg}>{bg}</option>)}
+                    </select>
+                  </div>
+               </div>
+
+               {/* Date of Birth (Clear Label Added) */}
+               <div className="space-y-1">
+                  <label className="text-[10px] font-black text-gray-400 uppercase ml-2 flex items-center gap-1">
+                      <Calendar size={10}/> Date of Birth (DOB)
+                  </label>
+                  <div className="relative">
+                    <Calendar className="absolute left-4 top-4 text-gray-400" size={18}/>
+                    <input type="date" className="w-full p-4 pl-12 bg-gray-50 rounded-2xl border-none text-gray-400 font-bold cursor-pointer transition-all focus:bg-white" onChange={e => setFormData({...formData, dob: e.target.value})} required />
+                  </div>
+               </div>
+            </div>
           </div>
 
-          <div className="space-y-4">
-            <div className="bg-slate-900 rounded-[24px] p-6 text-white relative overflow-hidden">
-               <Activity className="absolute right-[-10px] bottom-[-10px] opacity-10" size={100} />
-               <p className="text-sm opacity-70 uppercase tracking-widest font-black">Health Score</p>
-               <h4 className="text-5xl font-black mt-2">{healthScore}%</h4>
+          {/* MAIN GRID: Mobile Stack, Desktop 2 Columns */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            
+            {/* LEFT SIDE: Location & Legal Disclaimer */}
+            <div className="space-y-8 flex flex-col h-full">
+               <div className="flex-1">
+                  <h3 className="font-black text-gray-800 text-lg flex items-center gap-2 uppercase tracking-tighter mb-6 border-b pb-2">
+                      <ShieldCheck size={18} className="text-blue-600"/> Current Location
+                  </h3>
+                  <LocationPicker position={position} setPosition={setPosition} />
+               </div>
+
+               {/* Styled Legal Notice */}
+               <div className="flex gap-4 bg-red-50 p-6 rounded-[32px] border border-red-100 mt-auto shadow-sm">
+                  <ShieldAlert size={28} className="text-red-600 shrink-0" />
+                  <p className="text-[11px] font-bold text-red-800 leading-relaxed uppercase tracking-tight">
+                    By creating a hero account, you confirm that all information provided is true. LifeDrop is a connector platform; please verify medical details manually before donation.
+                  </p>
+               </div>
             </div>
 
-            <h3 className="font-bold text-gray-800 border-b pb-2 mt-6">Medical Screening</h3>
-            <div className="space-y-3">
-              <HealthCheck label="Weight is above 50kg" checked={formData.weight} onChange={() => setFormData({...formData, weight: !formData.weight})} />
-              <HealthCheck label="No alcohol in last 24h" checked={!formData.alcohol} onChange={() => setFormData({...formData, alcohol: !formData.alcohol})} />
-              <HealthCheck label="No major surgery (6 months)" checked={!formData.surgery} onChange={() => setFormData({...formData, surgery: !formData.surgery})} />
-              <HealthCheck label="No Tattoos (6 months)" checked={!formData.tattoo} onChange={() => setFormData({...formData, tattoo: !formData.tattoo})} />
+            {/* RIGHT SIDE: Health Score & Eligibility & Submit */}
+            <div className="space-y-8 flex flex-col h-full">
+                {/* Health Card */}
+                <div className="bg-slate-900 rounded-[40px] p-8 text-white relative overflow-hidden shadow-2xl">
+                   <Activity className="absolute right-[-10px] bottom-[-10px] opacity-10" size={120} />
+                   <p className="text-[10px] font-black text-red-500 uppercase tracking-[0.3em] mb-2">Medical Trust Rating</p>
+                   <div className="flex items-end gap-2">
+                      <h4 className="text-6xl font-black italic">{healthScore}%</h4>
+                      <span className="text-xs font-bold opacity-50 mb-2 uppercase tracking-widest leading-none">Safe Score</span>
+                   </div>
+                   <div className="mt-6 w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
+                      <div className="bg-red-600 h-full transition-all duration-700" style={{ width: `${healthScore}%` }}></div>
+                   </div>
+                </div>
+
+                {/* Eligibility Grid */}
+                <div>
+                   <h3 className="font-black text-gray-800 text-lg flex items-center gap-2 uppercase tracking-tighter mb-6 border-b pb-2">
+                       <ShieldCheck size={18} className="text-green-600"/> Eligibility Screening
+                   </h3>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <HealthCheck label="Weight > 50kg" checked={formData.weight} onChange={() => setFormData({...formData, weight: !formData.weight})} />
+                     <HealthCheck label="No alcohol (24h)" checked={!formData.alcohol} onChange={() => setFormData({...formData, alcohol: !formData.alcohol})} />
+                     <HealthCheck label="No surgery (6m)" checked={!formData.surgery} onChange={() => setFormData({...formData, surgery: !formData.surgery})} />
+                     <HealthCheck label="No Tattoos (6m)" checked={!formData.tattoo} onChange={() => setFormData({...formData, tattoo: !formData.tattoo})} />
+                   </div>
+                </div>
+
+                {/* Submit Button */}
+                <button 
+                    type="submit" 
+                    disabled={loading}
+                    className="w-full bg-red-600 text-white py-6 rounded-[28px] font-black text-xl shadow-xl shadow-red-100 hover:bg-red-700 transition-all flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50 mt-auto uppercase tracking-widest"
+                >
+                  {loading ? "PROCESSING..." : "Get Verified & Join"}
+                  <ArrowRight size={24} />
+                </button>
             </div>
 
-            <button 
-                type="submit" 
-                disabled={loading}
-                className={`w-full bg-red-600 text-white py-5 rounded-[24px] font-black text-lg shadow-xl shadow-red-100 hover:bg-red-700 transition mt-6 ${loading ? 'opacity-50' : ''}`}
-            >
-              {loading ? "SENDING OTP..." : "GET VERIFIED & REGISTER"}
-            </button>
-
-            {/* Added ShieldAlert UI Section */}
-            <div className="flex gap-3 bg-red-50 p-4 rounded-2xl border border-red-100 mt-4">
-              <ShieldAlert size={20} className="text-red-500 shrink-0" />
-              <p className="text-[9px] font-bold text-red-700 leading-relaxed">
-                By creating an account, you agree that LifeDrop is a connector platform. Please verify medical details manually before donation.
-              </p>
-            </div>
           </div>
         </form>
       </div>
@@ -167,10 +252,14 @@ const DonorRegister = () => {
   );
 };
 
+// Polished Checklist Component
 const HealthCheck = ({ label, checked, onChange }) => (
-  <label className={`flex justify-between items-center p-4 rounded-2xl border cursor-pointer transition ${checked ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-100'}`}>
-    <span className={`text-sm font-bold ${checked ? 'text-green-700' : 'text-gray-400'}`}>{label}</span>
-    <input type="checkbox" checked={checked} onChange={onChange} className="w-5 h-5 accent-red-600" />
+  <label className={`flex justify-between items-center p-5 rounded-3xl border-2 cursor-pointer transition-all duration-300 ${checked ? 'bg-green-50 border-green-200 shadow-sm' : 'bg-gray-50 border-transparent opacity-60'}`}>
+    <span className={`text-[10px] font-black uppercase tracking-tight ${checked ? 'text-green-700' : 'text-gray-400'}`}>{label}</span>
+    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${checked ? 'bg-green-600 border-green-600' : 'border-gray-200 bg-white'}`}>
+       {checked && <ShieldCheck size={14} className="text-white" />}
+    </div>
+    <input type="checkbox" checked={checked} onChange={onChange} className="hidden" />
   </label>
 );
 

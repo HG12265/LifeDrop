@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Bell, Phone, Droplet, User, CheckCircle, 
   XCircle, Package, ShieldCheck, Clock, Award, 
-  Tent, MapPin, Calendar, Link2 
+  Tent, MapPin, Calendar, Link2, Power
 } from 'lucide-react';
 
 import { generateCertificate } from '../utils/CertificateGenerator';
@@ -16,6 +16,7 @@ const DonorDashboard = ({ user }) => {
   const [bagId, setBagId] = useState("");
   const [stats, setStats] = useState({ donation_count: 0, is_available: true, days_remaining: 0 });
   const [camps, setCamps] = useState([]); 
+  const [isToggling, setIsToggling] = useState(false); // Toggle loading state
   
   const profileUrl = `${window.location.origin}/profile/${user.unique_id}`;
 
@@ -51,6 +52,31 @@ const DonorDashboard = ({ user }) => {
     return () => clearInterval(interval);
   }, [user.unique_id]);
 
+  // --- NEW FEATURE: TOGGLE VISIBILITY ---
+  const handleToggleStatus = async () => {
+    // Cooldown-la irundha switch panna allow panna koodathu
+    if (stats.days_remaining > 0) {
+        alert(`You are currently in a mandatory medical rest period for ${stats.days_remaining} more days.`);
+        return;
+    }
+
+    setIsToggling(true);
+    try {
+      const res = await fetch(`${API_URL}/api/donor/toggle-status/${user.unique_id}`, {
+        method: 'POST'
+      });
+      const data = await res.json();
+      if(res.ok) {
+        setStats(prev => ({ ...prev, is_available: data.is_available }));
+        alert(data.is_available ? "You are now ONLINE & Visible to Requesters" : "You are now OFFLINE & Hidden from Map");
+      }
+    } catch (err) {
+      alert("Error updating status");
+    } finally {
+      setIsToggling(false);
+    }
+  };
+
   const handleRespond = async (notifId, status) => {
     const res = await fetch(`${API_URL}/api/notif/respond`, {
       method: 'POST',
@@ -76,7 +102,7 @@ const DonorDashboard = ({ user }) => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-4 md:p-10 space-y-10">
+    <div className="max-w-7xl mx-auto p-4 md:p-10 space-y-10 pb-20">
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* --- LEFT SIDE: PROFILE & STATS --- */}
@@ -100,23 +126,39 @@ const DonorDashboard = ({ user }) => {
                         <p className="text-[10px] font-black text-gray-400 uppercase leading-none text-center">Donations</p>
                         <p className="text-3xl font-black text-red-600 mt-1">{stats.donation_count}</p>
                     </div>
-                    <div className={`p-4 rounded-3xl border flex flex-col items-center justify-center transition-all ${stats.is_available ? 'bg-green-50 border-green-100' : 'bg-orange-50 border-orange-100'}`}>
-                        <ShieldCheck className={stats.is_available ? 'text-green-600 mb-1' : 'text-orange-600 mb-1'} size={18} />
-                        <p className="text-[10px] font-black text-gray-400 uppercase leading-none">Status</p>
-                        <p className={`text-sm font-black uppercase mt-2 ${stats.is_available ? 'text-green-600' : 'text-orange-600'}`}>
-                            {stats.is_available ? 'Active' : 'Resting'}
+
+                    {/* INTERACTIVE TOGGLE STATUS BUTTON */}
+                    <button 
+                        onClick={handleToggleStatus}
+                        disabled={isToggling}
+                        className={`p-4 rounded-3xl border flex flex-col items-center justify-center transition-all duration-500 transform active:scale-95 shadow-sm ${
+                            stats.is_available 
+                            ? 'bg-green-50 border-green-200 hover:bg-green-100' 
+                            : 'bg-slate-100 border-slate-200 grayscale opacity-80'
+                        }`}
+                    >
+                        <div className={`w-3 h-3 rounded-full mb-1 ${stats.is_available ? 'bg-green-500 animate-pulse' : 'bg-slate-400'}`}></div>
+                        <p className="text-[10px] font-black text-gray-400 uppercase leading-none">Visibility</p>
+                        <p className={`text-sm font-black uppercase mt-1 ${stats.is_available ? 'text-green-600' : 'text-slate-500'}`}>
+                            {stats.is_available ? 'Online' : 'Offline'}
                         </p>
-                    </div>
+                    </button>
                 </div>
 
+                <p className="text-[9px] font-bold text-gray-300 italic mt-4 px-2">
+                    {stats.is_available 
+                        ? "* You are now visible to patients in your area." 
+                        : "* You are hidden from the map and matching search."}
+                </p>
+
                 {stats.donation_count > 0 && (
-                    <div className="mt-4 flex items-center justify-center gap-2 bg-amber-50 p-2 rounded-2xl border border-amber-100">
+                    <div className="mt-6 flex items-center justify-center gap-2 bg-amber-50 p-2 rounded-2xl border border-amber-100">
                         <Award className="text-amber-500" size={16} />
                         <span className="text-[10px] font-black text-amber-700 uppercase tracking-widest">Certified Hero</span>
                     </div>
                 )}
 
-                {!stats.is_available && (
+                {!stats.is_available && stats.days_remaining > 0 && (
                     <div className="mt-6 bg-slate-900 text-white p-6 rounded-[32px] text-left relative overflow-hidden">
                         <Clock className="absolute right-[-10px] bottom-[-10px] opacity-10" size={80} />
                         <p className="text-[10px] font-black opacity-50 uppercase tracking-widest leading-none mb-1">Cooldown period</p>
@@ -159,7 +201,6 @@ const DonorDashboard = ({ user }) => {
                         </div>
                     </div>
 
-                    {/* LOGIC 1: PENDING */}
                     {note.status === 'Pending' && (
                     <div className="flex flex-col sm:flex-row gap-4 mt-8">
                         <button onClick={() => handleRespond(note.notif_id, 'Accepted')} className="flex-1 bg-green-600 text-white py-4 rounded-2xl font-black flex items-center justify-center gap-2 shadow-xl shadow-green-100 hover:bg-green-700 transition transform active:scale-95">
@@ -171,7 +212,6 @@ const DonorDashboard = ({ user }) => {
                     </div>
                     )}
 
-                    {/* LOGIC 2: ACCEPTED */}
                     {note.status === 'Accepted' && (
                     <div className="space-y-6 mt-6 animate-in slide-in-from-bottom duration-500">
                         <div className="flex flex-col sm:flex-row gap-4">
@@ -200,7 +240,6 @@ const DonorDashboard = ({ user }) => {
                     </div>
                     )}
 
-                    {/* LOGIC 3: DONATED */}
                     {note.status === 'Donated' && (
                         <div className="mt-6 space-y-4">
                             <div className="bg-blue-600 p-6 rounded-[32px] text-white flex items-center justify-center gap-4 shadow-xl animate-in zoom-in">
@@ -219,7 +258,6 @@ const DonorDashboard = ({ user }) => {
                         </div>
                     )}
 
-                    {/* LOGIC 4: COMPLETED */}
                     {note.status === 'Completed' && (
                       <div className="mt-6 space-y-3">
                         <div className="bg-green-600 p-6 rounded-[32px] text-white flex items-center justify-center gap-4 shadow-xl">
@@ -235,12 +273,6 @@ const DonorDashboard = ({ user }) => {
                         >
                           <Award size={24} className="animate-pulse" />
                           DOWNLOAD HERO CERTIFICATE
-                        </button>
-                        <button 
-                            onClick={() => navigate(`/blockchain/${note.request_id}`)}
-                            className="w-full bg-slate-100 text-slate-400 py-4 rounded-[32px] font-black text-[10px] flex items-center justify-center gap-2"
-                        >
-                            <Link2 size={16} /> ARCHIVED LEDGER
                         </button>
                       </div>
                     )}
