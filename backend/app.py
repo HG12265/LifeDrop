@@ -608,7 +608,7 @@ def get_donor_stats(u_id):
     
     return jsonify({
         "donation_count": donor.donation_count,
-        "is_available": is_available,
+        "is_available": donor.is_available,
         "days_remaining": days_remaining
     })
 
