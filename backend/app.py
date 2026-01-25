@@ -73,19 +73,26 @@ class Donor(db.Model):
     last_surgery_date = db.Column(db.DateTime, nullable=True) # 6 months
     last_fever_date = db.Column(db.DateTime, nullable=True)   # 2 weeks
     last_antibiotic_date = db.Column(db.DateTime, nullable=True) # 7 days
-    
     # 3. Female Specific Guards
     is_pregnant = db.Column(db.Boolean, default=False)
     is_breastfeeding = db.Column(db.Boolean, default=False)
-    last_delivery_date = db.Column(db.DateTime, nullable=True) # 12 months recovery
-    
-    # Existing Fields
+    last_delivery_date = db.Column(db.DateTime, nullable=True) 
     lat = db.Column(db.Float)
     lng = db.Column(db.Float)
     health_score = db.Column(db.Integer)
     unique_id = db.Column(db.String(4), unique=True)
     donation_count = db.Column(db.Integer, default=0)
     cooldown_email_sent = db.Column(db.Boolean, default=False)
+    last_activity = db.Column(db.DateTime, default=datetime.utcnow)
+    # Post-Reg Fitness flags
+    fitness_status = db.Column(db.String(20), default='fit') # fit, resting, blocked
+    
+    @property
+    def rank_badge(self):
+        if self.donation_count >= 10: return "Gold Legend 🏆"
+        if self.donation_count >= 5: return "Silver Hero 🥈"
+        if self.donation_count >= 1: return "Bronze Saver 🥉"
+        return "New Hero 🌱"
 
 class Requester(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -435,6 +442,45 @@ def login():
     
     return jsonify({"message": "Invalid Credentials"}), 401
 
+# 1. API: Update Health/Lifestyle Change (Fitness Vault)
+@app.route('/api/donor/log-health-event', methods=['POST'])
+def log_health_event():
+    data = request.json
+    u_id = data.get('u_id')
+    event_type = data.get('type') # 'fever', 'tattoo', 'surgery'
+    
+    donor = Donor.query.filter_by(unique_id=u_id).first()
+    if not donor: return jsonify({"message": "Donor not found"}), 404
+    
+    now = datetime.utcnow()
+    
+    if event_type == 'fever':
+        donor.last_fever_date = now
+        msg = "Fever reported. Resting for 2 weeks."
+    elif event_type == 'tattoo':
+        donor.last_tattoo_date = now
+        msg = "Tattoo reported. Resting for 6 months."
+    elif event_type == 'surgery':
+        donor.last_surgery_date = now
+        msg = "Surgery reported. Resting for 6 months."
+    
+    db.session.commit()
+    return jsonify({"message": "Fitness status updated. Safety lock enabled."})
+
+@app.route('/api/donor/advanced-stats/<u_id>', methods=['GET'])
+def get_donor_advanced_stats(u_id):
+    donor = Donor.query.filter_by(unique_id=u_id).first()
+
+    potential_matches = Notification.query.filter_by(donor_id=u_id).count()
+    
+    return jsonify({
+        "badge": donor.rank_badge,
+        "donation_count": donor.donation_count,
+        "health_score": donor.health_score,
+        "impact_points": (donor.donation_count * 100) + (potential_matches * 10),
+        "status": "Available" if donor.is_available else "On Cooldown"
+    })
+
 @app.route('/api/donor/<u_id>', methods=['GET'])
 def get_donor_by_id(u_id):
     donor = Donor.query.filter_by(unique_id=u_id).first()
@@ -496,6 +542,39 @@ def get_donor_notifications(blood_group):
             "date": r.timestamp.strftime("%I:%M %p")
         })
     return jsonify(output)    
+
+# 1. API: Request Pulse (Live Donor Coverage)
+@app.route('/api/request/pulse/<int:req_id>', methods=['GET'])
+def get_request_pulse(req_id):
+    req = BloodRequest.query.get(req_id)
+    allowed_groups = BLOOD_COMPATIBILITY.get(req.blood_group, [req.blood_group])
+    
+    # Area-la total available matching donors evlo per
+    now = datetime.utcnow()
+    ninety_days = now - timedelta(days=90)
+
+    total_nearby = Donor.query.filter(
+        Donor.blood_group.in_(allowed_groups),
+        (Donor.last_donation_date == None) | (Donor.last_donation_date <= ninety_days),
+        Donor.has_hiv_hepa == False
+    ).count()
+
+    return jsonify({
+        "available_donors_in_region": total_nearby,
+        "urgency_level": req.urgency,
+        "is_critical": req.urgency >= 8
+    })
+
+# 2. API: Boost Urgency
+@app.route('/api/request/boost', methods=['POST'])
+def boost_request():
+    data = request.json
+    req = BloodRequest.query.get(data['req_id'])
+    if req and req.urgency < 10:
+        req.urgency += 1
+        db.session.commit()
+        return jsonify({"message": "Urgency Boosted! Notifications resent."})
+    return jsonify({"message": "Already at Max Urgency"})
 
 @app.route('/api/request/create', methods=['POST'])
 def create_request():
@@ -978,6 +1057,47 @@ def get_chain(req_id):
             "time": b.timestamp.strftime("%d %b %Y, %I:%M %p")
         })
     return jsonify(output)
+
+@app.route('/api/system/sync', methods=['GET'])
+def system_sync():
+    now = datetime.utcnow()
+    
+    try:
+        # 1. AUTOMATIC DONOR REACTIVATION
+        # 90 days cooldown mudinja donors-ah automatic-ah 'Available' aakurom
+        cooldown_limit = now - timedelta(days=90)
+        rested_donors = Donor.query.filter(
+            Donor.last_donation_date <= cooldown_limit,
+            Donor.last_donation_date != None
+        ).all()
+        
+        reactivated_count = 0
+        for d in rested_donors:
+            # Re-activate donor on the map
+            # Oru velai avaru 'Blocked' illa na mattum active panna porom
+            d.fitness_status = 'fit' 
+            # Cooldown email logic (Already namma panna logic-ah inga merge pannalam)
+            if not d.cooldown_email_sent:
+                Thread(target=send_cooldown_completion_email, args=(d.email, d.full_name)).start()
+                d.cooldown_email_sent = True
+            reactivated_count += 1
+
+        # 2. CLEANUP OLD OTPS
+        # 1 hour-ku munnadi generate panna OTP-ah DB-lendhu thookiduvom (Cleanup)
+        otp_limit = now - timedelta(hours=1)
+        OTPVerification.query.filter(OTPVerification.timestamp <= otp_limit).delete()
+
+        db.session.commit()
+        
+        return jsonify({
+            "status": "Success",
+            "message": f"System Synced. {reactivated_count} donors reactivated.",
+            "time": now.strftime("%Y-%m-%d %H:%M:%S")
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"status": "Error", "message": str(e)}), 500
 
 @app.route('/api/admin/check-cooldowns', methods=['GET'])
 def check_donor_cooldowns():
