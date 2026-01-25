@@ -524,6 +524,8 @@ def match_donors(request_id):
     # 3. Filter Query (Compatible + Active)
     donors = Donor.query.filter(
         Donor.blood_group.in_(allowed_donor_groups),
+        Donor.blood_group.in_(allowed_donor_groups),
+        Donor.is_available == True,
         (Donor.last_donation_date == None) | (Donor.last_donation_date <= cooldown_limit)
     ).all()
 
@@ -610,6 +612,18 @@ def get_donor_stats(u_id):
         "days_remaining": days_remaining
     })
 
+@app.route('/api/donor/toggle-status/<u_id>', methods=['POST'])
+def toggle_donor_status(u_id):
+    donor = Donor.query.filter_by(unique_id=u_id).first()
+    if donor:
+        # Toggle current status
+        donor.is_available = not donor.is_available
+        db.session.commit()
+        return jsonify({
+            "message": "Status Updated", 
+            "is_available": donor.is_available
+        }), 200
+    return jsonify({"message": "Donor not found"}), 404
 
 @app.route('/api/donor/targeted-alerts/<u_id>', methods=['GET'])
 def get_targeted_alerts(u_id):
