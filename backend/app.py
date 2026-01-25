@@ -67,6 +67,7 @@ class Donor(db.Model):
     last_donation_date = db.Column(db.DateTime, nullable=True) 
     donation_count = db.Column(db.Integer, default=0) 
     cooldown_email_sent = db.Column(db.Boolean, default=False)
+    is_available = db.Column(db.Boolean, default=True)
 
 class Requester(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -597,19 +598,28 @@ def send_notification():
 @app.route('/api/donor/profile-stats/<u_id>', methods=['GET'])
 def get_donor_stats(u_id):
     donor = Donor.query.filter_by(unique_id=u_id).first()
-    days_remaining = 0
-    is_available = True
+    if not donor:
+        return jsonify({"message": "Donor not found"}), 404
 
+    days_remaining = 0
+    is_resting = False # Medical Rest
+
+    # 1. Medical Cooldown Calculation
     if donor.last_donation_date:
-        days_passed = (datetime.utcnow() - donor.last_donation_date).days
+        # Time difference calculate panroam
+        delta = datetime.utcnow() - donor.last_donation_date
+        days_passed = delta.days
+        
         if days_passed < 90:
             days_remaining = 90 - days_passed
-            is_available = False
-    
+            is_resting = True
+
+    # 2. Final Response
     return jsonify({
         "donation_count": donor.donation_count,
-        "is_available": donor.is_available,
-        "days_remaining": days_remaining
+        "is_available": donor.is_available, # Manual Toggle (DB-la irunthu)
+        "days_remaining": days_remaining,    # Cooldown days
+        "is_resting": is_resting            # True if donor is in 90-days rest
     })
 
 @app.route('/api/donor/toggle-status/<u_id>', methods=['POST'])
