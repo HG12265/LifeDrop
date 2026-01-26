@@ -106,6 +106,14 @@ const Login = ({ setUser }) => {
                 required 
               />
             </div>
+            <div className="text-right mt-1">
+              <span 
+                onClick={() => navigate('/forgot-password')} 
+                className="text-[10px] font-black text-gray-400 uppercase tracking-widest cursor-pointer hover:text-red-600 transition"
+              >
+                Forgot Password?
+              </span>
+            </div>
 
             <button 
               type="submit" 
@@ -116,7 +124,7 @@ const Login = ({ setUser }) => {
               {!loading && <ArrowRight size={20} />}
             </button>
           </form>
-
+          
           <p className="text-center mt-8 text-xs text-gray-400 font-medium tracking-tight">
             {formData.role === 'admin' ? "System Administrator Identity Verified" : "New to LifeDrop?"} 
             <span className="text-red-600 font-black cursor-pointer ml-1 hover:underline uppercase tracking-tighter" onClick={() => navigate('/')}>

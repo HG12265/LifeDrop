@@ -24,6 +24,7 @@ import AdminAnalytics from './pages/AdminAnalytics';
 import CampManager from './pages/CampManager';
 import BlockchainView from './pages/BlockchainView';
 import Contact from './pages/Contact';
+import ForgotPassword from './pages/ForgotPassword';
 
 function App() {
   // --- User Session Logic (LocalStorage Sync) ---
@@ -73,6 +74,7 @@ function App() {
             <Route path="/profile/:id" element={<PublicProfile />} />
             <Route path="/blockchain/:id" element={<BlockchainView />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
 
             {/* 2. Donor Protected Routes */}
             <Route 

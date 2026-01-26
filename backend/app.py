@@ -416,6 +416,55 @@ def login():
     
     return jsonify({"message": "Invalid Credentials"}), 401
 
+# 1. API: Check Email & Send Reset OTP
+@app.route('/api/auth/forgot-password', methods=['POST'])
+def forgot_password_request():
+    data = request.json
+    email = data.get('email')
+
+    # Check if user exists in Donor or Requester table
+    user = Donor.query.filter_by(email=email).first() or Requester.query.filter_by(email=email).first()
+    
+    if not user:
+        return jsonify({"message": "User with this email does not exist!"}), 404
+
+    otp_code = str(random.randint(1000, 9999))
+    
+    # Save OTP to our existing OTPVerification table
+    OTPVerification.query.filter_by(email=email).delete()
+    new_entry = OTPVerification(email=email, otp=otp_code)
+    db.session.add(new_entry)
+    db.session.commit()
+
+    # Send Email via Brevo (Reuse your existing function)
+    Thread(target=send_brevo_otp, args=(email, otp_code)).start()
+    
+    return jsonify({"message": "Reset OTP sent to your email!"}), 200
+
+# 2. API: Verify OTP & Update Password
+@app.route('/api/auth/reset-password', methods=['POST'])
+def reset_password_final():
+    data = request.json
+    email = data.get('email')
+    otp = data.get('otp')
+    new_password = data.get('new_password')
+
+    # Verify OTP first
+    record = OTPVerification.query.filter_by(email=email, otp=otp).first()
+    if not record:
+        return jsonify({"message": "Invalid or Expired OTP!"}), 400
+
+    # Find user and update password
+    user = Donor.query.filter_by(email=email).first() or Requester.query.filter_by(email=email).first()
+    
+    if user:
+        user.password = generate_password_hash(new_password, method='pbkdf2:sha256')
+        db.session.delete(record) # Clear OTP
+        db.session.commit()
+        return jsonify({"success": True, "message": "Password updated successfully!"}), 200
+    
+    return jsonify({"message": "User not found!"}), 404
+
 @app.route('/api/donor/<u_id>', methods=['GET'])
 def get_donor_by_id(u_id):
     donor = Donor.query.filter_by(unique_id=u_id).first()
