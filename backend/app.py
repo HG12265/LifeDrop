@@ -294,6 +294,10 @@ def home():
 @limiter.limit("10 per 10 minutes")
 def register_donor():
     data = request.json
+    # Safety Check: Rendu table-laiyum intha email irukka nu paarkurom
+    if Donor.query.filter_by(email=data['email']).first() or Requester.query.filter_by(email=data['email']).first():
+        return jsonify({"message": "This email is already registered, you may login or use different email"}), 400
+    
     u_id = generate_unique_id(Donor)
     hashed_pw = generate_password_hash(data['password'], method='pbkdf2:sha256')
     new_donor = Donor(
@@ -316,13 +320,15 @@ def register_donor():
 @limiter.limit("10 per 10 minutes")
 def register_requester():
     data = request.json
-    # UNIQUE ID GENERATION MUKKIYAM
-    u_id = generate_unique_id(Requester) 
+    # FIX: Inga Requester table-aiyum sethu check pannanum nanba
+    if Requester.query.filter_by(email=data['email']).first() or Donor.query.filter_by(email=data['email']).first():
+        return jsonify({"message": "This email is already registered, you may login or use different email"}), 400
     
+    u_id = generate_unique_id(Requester) 
     hashed_pw = generate_password_hash(data['password'], method='pbkdf2:sha256')
     
     new_req = Requester(
-        unique_id=u_id, # ID inga save aaganum
+        unique_id=u_id,
         full_name=data['fullName'],
         phone=data['phone'],
         email=data['email'],
@@ -332,26 +338,28 @@ def register_requester():
     db.session.commit()
     return jsonify({"message": "Success", "unique_id": u_id}), 201
 
-# 1. API to Generate & Send OTP (Database logic)
+# --- Send OTP Route (Ithu already perfect-ah irukku nanba) ---
 @app.route('/api/verify/send-otp', methods=['POST'])
 @limiter.limit("10 per 10 minutes")
 def send_otp_request():
     data = request.json
     email = data.get('email')
-    otp_code = str(random.randint(1000, 9999)) # 4 Digit OTP
-
+    
+    user_exists = Donor.query.filter_by(email=email).first() or Requester.query.filter_by(email=email).first()
+    
+    if user_exists:
+        return jsonify({
+            "success": False, 
+            "message": "This email is already registered, you may login or use different email"
+        }), 400
+    
+    otp_code = str(random.randint(1000, 9999))
     try:
-        # DB-la intha email-ku already OTP irundha delete pannuvom (Clean up)
         OTPVerification.query.filter_by(email=email).delete()
-        
-        # Pudhusa OTP-ah database-la save panroam
         new_entry = OTPVerification(email=email, otp=otp_code)
         db.session.add(new_entry)
         db.session.commit()
-
-        # Email anuppuvom
         Thread(target=send_brevo_otp, args=(email, otp_code)).start()
-        
         return jsonify({"message": "OTP sent to your email!"}), 200
     except Exception as e:
         print(f"Error: {e}")

@@ -48,10 +48,11 @@ const DonorRegister = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: formData.email })
       });
+      const data = await res.json();
       if (res.ok) {
         setShowOTP(true);
       } else {
-        alert("Failed to send OTP. Please check your email address.");
+        alert(data.message || "Failed to send OTP.");
       }
     } catch (err) {
       alert("Error connecting to server. Please check if backend is live.");
