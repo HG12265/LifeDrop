@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Bell, Phone, Droplet, User, CheckCircle, 
   XCircle, Package, ShieldCheck, Clock, Award, 
-  Tent, MapPin, Calendar, Link2, Power
+  Tent, MapPin, Calendar, Link2, Power, Activity
 } from 'lucide-react';
 
 import { generateCertificate } from '../utils/CertificateGenerator';
@@ -16,7 +16,7 @@ const DonorDashboard = ({ user }) => {
   const [bagId, setBagId] = useState("");
   const [stats, setStats] = useState({ donation_count: 0, is_available: true, days_remaining: 0 });
   const [camps, setCamps] = useState([]); 
-  const [isToggling, setIsToggling] = useState(false); // Toggle loading state
+  const [isToggling, setIsToggling] = useState(false);
   
   const profileUrl = `${window.location.origin}/profile/${user.unique_id}`;
 
@@ -53,9 +53,8 @@ const DonorDashboard = ({ user }) => {
   }, [user.unique_id]);
 
   const handleToggleStatus = async () => {
-    // Cooldown-la irundha switch panna allow panna koodathu
     if (stats.days_remaining > 0) {
-        alert(`You are currently in a mandatory medical rest period for ${stats.days_remaining} more days.`);
+        alert(`Medical Safety: You are in a mandatory rest period for ${stats.days_remaining} more days.`);
         return;
     }
 
@@ -67,7 +66,6 @@ const DonorDashboard = ({ user }) => {
       const data = await res.json();
       if(res.ok) {
         setStats(prev => ({ ...prev, is_available: data.is_available }));
-        alert(data.is_available ? "You are now ONLINE & Visible to Requesters" : "You are now OFFLINE & Hidden from Map");
       }
     } catch (err) {
       alert("Error updating status");
@@ -93,15 +91,15 @@ const DonorDashboard = ({ user }) => {
       body: JSON.stringify({ notif_id: notifId, bag_id: bagId })
     });
     if(res.ok) {
-      alert("Donation Confirmed! Cooldown Started.");
+      alert("Hero! Donation Confirmed. Your 90-day rest period has started.");
       setBagId("");
       fetchAlerts();
-      fetchStats();
+      fetchStats(); // Ippo stats refresh aagi cooldown theriyaum
     }
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-4 md:p-10 space-y-10 pb-20">
+    <div className="max-w-7xl mx-auto p-4 md:p-10 space-y-10 pb-20 animate-in fade-in duration-700">
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* --- LEFT SIDE: PROFILE & STATS --- */}
@@ -126,45 +124,43 @@ const DonorDashboard = ({ user }) => {
                         <p className="text-3xl font-black text-red-600 mt-1">{stats.donation_count}</p>
                     </div>
 
-                    {/* INTERACTIVE TOGGLE STATUS BUTTON */}
                     <button 
                         onClick={handleToggleStatus}
-                        disabled={isToggling}
+                        disabled={isToggling || stats.days_remaining > 0}
                         className={`p-4 rounded-3xl border flex flex-col items-center justify-center transition-all duration-500 transform active:scale-95 shadow-sm ${
                             stats.is_available 
                             ? 'bg-green-50 border-green-200 hover:bg-green-100' 
-                            : 'bg-slate-100 border-slate-200 grayscale opacity-80'
+                            : 'bg-slate-100 border-slate-200 opacity-80'
                         }`}
                     >
                         <div className={`w-3 h-3 rounded-full mb-1 ${stats.is_available ? 'bg-green-500 animate-pulse' : 'bg-slate-400'}`}></div>
                         <p className="text-[10px] font-black text-gray-400 uppercase leading-none">Visibility</p>
                         <p className={`text-sm font-black uppercase mt-1 ${stats.is_available ? 'text-green-600' : 'text-slate-500'}`}>
-                            {stats.is_available ? 'Online' : 'Offline'}
+                            {stats.days_remaining > 0 ? 'Resting' : (stats.is_available ? 'Online' : 'Offline')}
                         </p>
                     </button>
                 </div>
 
-                <p className="text-[9px] font-bold text-gray-300 italic mt-4 px-2">
-                    {stats.is_available 
-                        ? "* You are now visible to patients in your area." 
-                        : "* You are hidden from the map and matching search."}
-                </p>
-
-                {stats.donation_count > 0 && (
-                    <div className="mt-6 flex items-center justify-center gap-2 bg-amber-50 p-2 rounded-2xl border border-amber-100">
-                        <Award className="text-amber-500" size={16} />
-                        <span className="text-[10px] font-black text-amber-700 uppercase tracking-widest">Certified Hero</span>
+                {/* --- COOLDOWN INDICATOR FIX --- */}
+                {stats.days_remaining > 0 && (
+                    <div className="mt-6 bg-slate-900 text-white p-6 rounded-[32px] text-left relative overflow-hidden shadow-2xl animate-in zoom-in">
+                        <Clock className="absolute right-[-10px] bottom-[-10px] opacity-10" size={80} />
+                        <p className="text-[10px] font-black opacity-50 uppercase tracking-widest leading-none mb-1">Rest Period Active</p>
+                        <h4 className="text-3xl font-black mt-1 text-red-500">{stats.days_remaining} Days Left</h4>
+                        <div className="mt-4 w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
+                            <div 
+                                className="bg-red-500 h-full transition-all duration-1000" 
+                                style={{ width: `${((90 - stats.days_remaining) / 90) * 100}%` }}
+                            ></div>
+                        </div>
+                        <p className="text-[8px] mt-3 opacity-40 font-bold italic">* You will be automatically visible after this period.</p>
                     </div>
                 )}
 
-                {!stats.is_available && stats.days_remaining > 0 && (
-                    <div className="mt-6 bg-slate-900 text-white p-6 rounded-[32px] text-left relative overflow-hidden">
-                        <Clock className="absolute right-[-10px] bottom-[-10px] opacity-10" size={80} />
-                        <p className="text-[10px] font-black opacity-50 uppercase tracking-widest leading-none mb-1">Cooldown period</p>
-                        <h4 className="text-3xl font-black mt-1 text-red-500">{stats.days_remaining} Days Left</h4>
-                        <div className="mt-4 w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
-                            <div className="bg-red-500 h-full transition-all duration-1000" style={{ width: `${((90 - stats.days_remaining) / 90) * 100}%` }}></div>
-                        </div>
+                {stats.donation_count > 0 && stats.days_remaining === 0 && (
+                    <div className="mt-6 flex items-center justify-center gap-2 bg-amber-50 p-2 rounded-2xl border border-amber-100">
+                        <Award className="text-amber-500" size={16} />
+                        <span className="text-[10px] font-black text-amber-700 uppercase tracking-widest">Certified Hero</span>
                     </div>
                 )}
             </div>
@@ -188,8 +184,8 @@ const DonorDashboard = ({ user }) => {
                 <div className="p-6 md:p-8">
                     <div className="flex justify-between items-start mb-6">
                         <div>
-                            <span className="bg-red-100 text-red-600 text-[9px] px-3 py-1 rounded-full font-black uppercase tracking-widest italic">Specific Request</span>
-                            <h4 className="text-2xl font-black text-gray-800 mt-2">Needs {note.blood} Blood</h4>
+                            <span className="bg-red-100 text-red-600 text-[9px] px-3 py-1 rounded-full font-black uppercase tracking-widest italic">Personal Request</span>
+                            <h4 className="text-2xl font-black text-gray-800 mt-2 italic">Needs {note.blood} Blood</h4>
                             <p className="text-gray-500 font-bold text-sm mt-1">{note.patient} @ {note.hospital}</p>
                         </div>
                         <div className={`px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest border ${
@@ -219,7 +215,7 @@ const DonorDashboard = ({ user }) => {
                             </a>
                             <button 
                                 onClick={() => navigate(`/blockchain/${note.request_id}`)}
-                                className="flex-1 bg-white border-2 border-slate-100 text-slate-400 py-4 rounded-2xl font-black text-[10px] flex items-center justify-center gap-2 hover:border-red-200 hover:text-red-600 transition"
+                                className="flex-1 bg-white border-2 border-slate-100 text-slate-400 py-4 rounded-2xl font-black text-[10px] flex items-center justify-center gap-2 hover:border-red-200 hover:text-red-500 transition"
                             >
                                 <Link2 size={16} /> VIEW LIVE LEDGER
                             </button>
@@ -250,7 +246,7 @@ const DonorDashboard = ({ user }) => {
                             </div>
                             <button 
                                 onClick={() => navigate(`/blockchain/${note.request_id}`)}
-                                className="w-full border-2 border-dashed border-blue-100 text-blue-600 py-4 rounded-[32px] font-black text-xs flex items-center justify-center gap-2"
+                                className="w-full border-2 border-dashed border-blue-100 text-blue-600 py-4 rounded-[32px] font-black text-xs flex items-center justify-center gap-2 hover:bg-blue-50 transition"
                             >
                                 <ShieldCheck size={18} /> VERIFY BLOCKCHAIN RECORD
                             </button>
@@ -262,7 +258,7 @@ const DonorDashboard = ({ user }) => {
                         <div className="bg-green-600 p-6 rounded-[32px] text-white flex items-center justify-center gap-4 shadow-xl">
                            <ShieldCheck size={32} />
                            <div className="text-left">
-                              <h4 className="text-xl font-black italic uppercase leading-none">Life Saved!</h4>
+                              <h4 className="text-xl font-black italic uppercase leading-none text-white">Life Saved!</h4>
                               <p className="text-[10px] font-bold opacity-80 uppercase tracking-widest mt-1">Patient received the blood.</p>
                            </div>
                         </div>
@@ -275,9 +271,9 @@ const DonorDashboard = ({ user }) => {
                         </button>
                         <button 
                                 onClick={() => navigate(`/blockchain/${note.request_id}`)}
-                                className="w-full border-2 border-dashed border-blue-100 text-blue-600 py-4 rounded-[32px] font-black text-xs flex items-center justify-center gap-2"
+                                className="w-full border-2 border-dashed border-green-100 text-green-600 py-4 rounded-[32px] font-black text-xs flex items-center justify-center gap-2 hover:bg-green-50 transition"
                             >
-                                <ShieldCheck size={18} /> VERIFY BLOCKCHAIN RECORD
+                                <ShieldCheck size={18} /> VIEW FINAL LEDGER
                             </button>
                       </div>
                     )}
@@ -286,7 +282,7 @@ const DonorDashboard = ({ user }) => {
             )) : (
                 <div className="bg-white p-20 rounded-[48px] border-2 border-dashed border-gray-100 text-center">
                     <Droplet size={60} className="text-gray-100 mb-6 mx-auto" />
-                    <p className="text-gray-400 font-black text-xl tracking-tight">No urgent alerts for you.</p>
+                    <p className="text-gray-400 font-black text-xl tracking-tight uppercase italic">No urgent alerts for you.</p>
                 </div>
             )}
             </div>
@@ -297,23 +293,23 @@ const DonorDashboard = ({ user }) => {
       {camps.length > 0 && (
         <div className="pt-10 border-t border-gray-100">
           <div className="flex items-center gap-3 mb-8 px-2">
-            <div className="bg-red-100 p-2 rounded-xl text-red-600"><Tent size={24} /></div>
+            <div className="bg-red-100 p-2 rounded-xl text-red-600 shadow-sm"><Tent size={24} /></div>
             <h3 className="text-2xl font-black text-gray-800 tracking-tight italic uppercase">Upcoming Donation Drives</h3>
           </div>
           <div className="flex gap-6 overflow-x-auto pb-8 scrollbar-hide px-2">
             {camps.map(camp => (
               <div key={camp.id} className="min-w-[320px] bg-white p-8 rounded-[40px] shadow-xl border border-gray-50 relative overflow-hidden group hover:border-red-100 transition-all">
-                <div className="bg-red-50 text-red-600 w-fit px-4 py-1.5 rounded-full text-[10px] font-black uppercase mb-6">{camp.city}</div>
+                <div className="bg-red-50 text-red-600 w-fit px-4 py-1.5 rounded-full text-[10px] font-black uppercase mb-6 tracking-widest">{camp.city}</div>
                 <h4 className="text-xl font-black text-gray-800 leading-tight mb-3 italic">{camp.title}</h4>
                 <p className="text-xs font-bold text-gray-400 flex items-center gap-2 mb-6"><MapPin size={16} className="text-red-500"/> {camp.location}</p>
                 <div className="flex items-center justify-between border-t border-gray-50 pt-6">
                     <div>
-                        <p className="text-[9px] font-black text-gray-300 uppercase">Date</p>
+                        <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Date</p>
                         <p className="text-xs font-black text-gray-700 flex items-center gap-1 mt-1"><Calendar size={12}/> {camp.date}</p>
                     </div>
                     <div className="text-right">
-                        <p className="text-[9px] font-black text-gray-300 uppercase">Timings</p>
-                        <p className="text-xs font-black text-gray-700 flex items-center gap-1 mt-1"><Clock size={12}/> {camp.time}</p>
+                        <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Timings</p>
+                        <p className="text-xs font-black text-gray-700 flex items-center gap-1 mt-1 justify-end"><Clock size={12}/> {camp.time}</p>
                     </div>
                 </div>
               </div>
