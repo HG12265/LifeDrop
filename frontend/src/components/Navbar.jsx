@@ -36,6 +36,8 @@ const Navbar = ({ user, handleLogout }) => {
     } flex items-center border-b border-gray-100`}>
       <div className="max-w-7xl mx-auto w-full px-6 flex justify-between items-center">
         
+        
+        
         {/* LOGO */}
         <Link to="/" className="flex items-center gap-3 group">
           <div className="bg-red-600 p-2.5 rounded-2xl shadow-lg shadow-red-200 group-hover:scale-110 transition-transform duration-300">

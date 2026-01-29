@@ -273,6 +273,12 @@ const DonorDashboard = ({ user }) => {
                           <Award size={24} className="animate-pulse" />
                           DOWNLOAD HERO CERTIFICATE
                         </button>
+                        <button 
+                                onClick={() => navigate(`/blockchain/${note.request_id}`)}
+                                className="w-full border-2 border-dashed border-blue-100 text-blue-600 py-4 rounded-[32px] font-black text-xs flex items-center justify-center gap-2"
+                            >
+                                <ShieldCheck size={18} /> VERIFY BLOCKCHAIN RECORD
+                            </button>
                       </div>
                     )}
                 </div>
