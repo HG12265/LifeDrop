@@ -5,7 +5,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Navbar from './components/Navbar';
 import Footer from './components/Footer'; // PUDHU COMPONENT
 import ChatBot from './components/ChatBot';
-import BroadcastAlert from './components/BroadcastAlert';
 
 // --- Pages ---
 import Home from './pages/Home';
@@ -59,7 +58,6 @@ function App() {
         
         {/* Fixed & Global UI Elements */}
         <Navbar user={user} handleLogout={handleLogout} />
-        <BroadcastAlert />
         <ChatBot />
 
         {/* Main Content Area */}
