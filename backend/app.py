@@ -50,6 +50,10 @@ else:
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    "pool_pre_ping": True,  # Connection-ah use panna munnadi check pannum
+    "pool_recycle": 280,    # 280 seconds-ku oru vaati connection-ah refresh pannum
+}
 db = SQLAlchemy(app)
 
 class Donor(db.Model):
