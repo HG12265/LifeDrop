@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { API_URL } from '../config'; 
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, MapPin, Clock, Plus, Trash2, Tent } from 'lucide-react';
@@ -22,7 +23,7 @@ const CampManager = () => {
       body: JSON.stringify(formData)
     });
     if(res.ok) {
-      alert("Camp Scheduled!");
+      toast.success("Camp Scheduled!");
       setFormData({ title: '', location: '', city: '', date: '', time: '' });
       fetchCamps();
     }

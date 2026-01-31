@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { API_URL } from '../config'; 
+import ConfirmModal from '../components/ConfirmModal'; // PUDHU IMPORT
 import { 
   Plus, Clock, CheckCircle2, MapPin, History, 
   Droplet, Truck, AlertCircle, Link2, ShieldCheck, Phone 
@@ -11,13 +13,16 @@ const RequesterDashboard = ({ user }) => {
   const [history, setHistory] = useState([]);
   const [stats, setStats] = useState({ total: 0, pending: 0, completed: 0 });
 
-  // 1. Data Fetching Logic (Sync with Backend Reveal API)
+  // --- MODAL STATES ---
+  const [showReceivedModal, setShowReceivedModal] = useState(false);
+  const [selectedReqId, setSelectedReqId] = useState(null);
+
+  // 1. Data Fetching Logic
   const fetchHistory = () => {
     fetch(`${API_URL}/api/requester/history/${user.unique_id}`)
       .then(res => res.json())
       .then(data => {
         setHistory(data);
-        // Live Statistics calculation
         const total = data.length;
         const pending = data.filter(r => r.status !== 'Completed' && r.status !== 'Rejected').length;
         const completed = data.filter(r => r.status === 'Completed').length;
@@ -28,30 +33,46 @@ const RequesterDashboard = ({ user }) => {
 
   useEffect(() => {
     fetchHistory();
-    // Real-time synchronization every 10 seconds
     const interval = setInterval(fetchHistory, 10000); 
     return () => clearInterval(interval);
   }, [user.unique_id]);
 
-  // 2. Final Step: Mark Blood as Received
-  const handleComplete = async (reqId) => {
-    if(!window.confirm("Confirm that you have received the blood? This will close the case.")) return;
+  // 2. Trigger Modal Function
+  const triggerReceivedModal = (reqId) => {
+    setSelectedReqId(reqId);
+    setShowReceivedModal(true);
+  };
+
+  // 3. Final API Call (After Modal Confirmation)
+  const finalizeReceived = async () => {
+    setShowReceivedModal(false);
     try {
-      const res = await fetch(`${API_URL}/api/request/complete/${reqId}`, {
+      const res = await fetch(`${API_URL}/api/request/complete/${selectedReqId}`, {
         method: 'POST',
       });
       if (res.ok) {
-        alert("Life Saved! Process marked as Completed. Thank you for using LifeDrop.");
+        toast.success("Life Saved! Case Closed Successfully.");
         fetchHistory();
       }
     } catch (err) {
-      alert("Error updating status. Please check your connection.");
+      toast.error("Connection error. Please try again.");
     }
   };
 
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-10 space-y-8 animate-in fade-in duration-500 pb-20">
       
+      {/* CUSTOM RECEIVED CONFIRMATION MODAL */}
+      <ConfirmModal 
+        isOpen={showReceivedModal}
+        type="success" // Green theme for success action
+        title="Confirm Blood Receipt"
+        message="Are you sure you have received the blood? This will officially close the request and notify the donor hero."
+        confirmText="YES, I RECEIVED IT"
+        onConfirm={finalizeReceived}
+        onCancel={() => setShowReceivedModal(false)}
+      />
+
       {/* 1. HEADER SECTION */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
         <div>
@@ -84,7 +105,6 @@ const RequesterDashboard = ({ user }) => {
             <div key={req.id} className="group relative bg-slate-50 p-6 md:p-8 rounded-[32px] border border-gray-100 transition hover:bg-white hover:shadow-2xl hover:border-red-100">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                     
-                    {/* Patient and Blood Info */}
                     <div className="flex gap-6 items-center">
                         <div className="bg-red-600 text-white w-16 h-16 rounded-[24px] flex flex-col items-center justify-center shadow-lg shadow-red-100 group-hover:scale-110 transition duration-300">
                             <span className="text-[10px] font-black opacity-60 leading-none mb-1 uppercase">Group</span>
@@ -98,7 +118,6 @@ const RequesterDashboard = ({ user }) => {
                         </div>
                     </div>
 
-                    {/* Status Badge and Buttons */}
                     <div className="w-full md:w-auto flex flex-col items-end gap-4">
                         <div className={`px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-sm flex items-center gap-2 border ${
                             req.status === 'Completed' ? 'bg-green-50 text-green-600 border-green-100' :
@@ -111,7 +130,6 @@ const RequesterDashboard = ({ user }) => {
                         </div>
 
                         <div className="flex flex-wrap justify-end gap-3 w-full">
-                            {/* BLOCKCHAIN LEDGER ACCESS */}
                             {['Accepted', 'On the way', 'Completed'].includes(req.status) && (
                                 <button 
                                   onClick={() => navigate(`/blockchain/${req.id}`)}
@@ -121,10 +139,9 @@ const RequesterDashboard = ({ user }) => {
                                 </button>
                             )}
 
-                            {/* RECEIVED CONFIRMATION */}
                             {req.status === 'On the way' && (
                                 <button 
-                                    onClick={() => handleComplete(req.id)}
+                                    onClick={() => triggerReceivedModal(req.id)} // TRIGGER MODAL
                                     className="flex items-center gap-2 bg-green-600 text-white px-6 py-3 rounded-xl font-black text-[9px] tracking-widest shadow-lg shadow-green-100 hover:bg-green-700 transition active:scale-95"
                                 >
                                     <CheckCircle2 size={14} /> I RECEIVED THE BLOOD
@@ -136,7 +153,6 @@ const RequesterDashboard = ({ user }) => {
                     </div>
                 </div>
 
-                {/* --- DATA REVEAL LOGIC: Show Donor Details after Acceptance --- */}
                 {req.accepted_donor && (
                   <div className="mt-6 p-5 bg-white border-2 border-dashed border-green-100 rounded-[28px] animate-in slide-in-from-top duration-500">
                       <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -150,7 +166,6 @@ const RequesterDashboard = ({ user }) => {
                               </div>
                           </div>
                           
-                          {/* Reveal Full Phone Number */}
                           <a 
                               href={`tel:${req.accepted_donor.phone}`} 
                               className="w-full sm:w-auto flex items-center justify-center gap-3 bg-slate-900 text-white px-8 py-4 rounded-2xl font-black text-sm shadow-xl hover:bg-black transition active:scale-95 border-b-4 border-green-600"
@@ -165,7 +180,6 @@ const RequesterDashboard = ({ user }) => {
                   </div>
                 )}
 
-                {/* Help message if no donor accepted yet */}
                 {req.status === 'Pending' && (
                    <div className="mt-6 flex items-center gap-3 bg-orange-50 p-4 rounded-2xl border border-orange-100">
                       <div className="bg-orange-500 p-1.5 rounded-full text-white"><AlertCircle size={14}/></div>
@@ -191,7 +205,6 @@ const RequesterDashboard = ({ user }) => {
   );
 };
 
-// Reusable Sub-component for Stats Cards
 const StatCard = ({ icon, label, value, color }) => (
   <div className={`${color} p-8 rounded-[40px] text-white shadow-2xl relative overflow-hidden group transition-all duration-500 hover:scale-[1.03]`}>
     <div className="absolute right-[-10px] bottom-[-10px] opacity-10 group-hover:scale-110 transition duration-700 group-hover:rotate-12">

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { API_URL } from '../config'; 
+import { toast } from 'sonner';
 import { ShieldCheck, RefreshCcw, Loader2 } from 'lucide-react';
 
 const OTPModal = ({ email, onVerify, onClose, onResend }) => {
@@ -8,7 +9,7 @@ const OTPModal = ({ email, onVerify, onClose, onResend }) => {
 
   const handleCheck = async () => {
     // 1. Basic Validation
-    if (otp.length !== 4) return alert("Please enter the 4-digit code sent to your email.");
+    if (otp.length !== 4) return toast.error("Please enter the 4-digit code sent to your email.");
     
     setLoading(true); // Loading starts here
 
@@ -35,12 +36,12 @@ const OTPModal = ({ email, onVerify, onClose, onResend }) => {
         // So namma inga setLoading(false) panna thevai illai.
       } else {
         // If OTP is wrong
-        alert(data.message || "Invalid OTP! Please check your email.");
+        toast.error(data.message || "Invalid OTP! Please check your email.");
         setLoading(false); // Revert button only on wrong OTP
       }
     } catch (err) {
-      console.error("Verification Error:", err);
-      alert("Connection error. Please check if the server is running.");
+      console.toast.error("Verification Error:", err);
+      toast.error("Connection error. Please check if the server is running.");
       setLoading(false); // Revert button on network error
     }
   };

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { API_URL } from '../config'; 
 import { useParams, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
 import { ShieldCheck, MapPin, Send, ArrowLeft, Heart, Activity, Phone } from 'lucide-react';
 
@@ -43,9 +44,9 @@ const DonorMatching = () => {
                 body: JSON.stringify({ donor_id: donorId, request_id: id })
             });
             const result = await res.json();
-            alert(result.message);
+            toast.success(result.message);
         } catch (err) {
-            alert("Failed to send request.");
+            toast.error("Failed to send request.");
         }
     };
 

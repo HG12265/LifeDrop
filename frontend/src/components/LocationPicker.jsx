@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
+import { toast } from 'sonner';
 import 'leaflet/dist/leaflet.css';
 
 // --- MARKER BUG FIX ---
@@ -59,7 +60,7 @@ const LocationPicker = ({ position, setPosition }) => {
   // 2. Improved Accuracy Geolocation Logic
   const handleCurrentLocation = () => {
     if (!navigator.geolocation) {
-      return alert("Geolocation is not supported by your browser.");
+      return toast.error("Geolocation is not supported by your browser.");
     }
 
     const options = {
@@ -77,7 +78,7 @@ const LocationPicker = ({ position, setPosition }) => {
         setPosition(newPos); // State update aagum pothu MapRecenter trigger aagum
       },
       (err) => {
-        alert("Error: " + err.message + ". Please enable GPS/Location.");
+        toast.error("Error: " + err.message + ". Please enable GPS/Location.");
       },
       options
     );

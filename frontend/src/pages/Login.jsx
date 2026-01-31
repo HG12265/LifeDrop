@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { API_URL } from '../config'; 
 import { useNavigate } from 'react-router-dom';
 import { LogIn, UserCircle, Heart } from 'lucide-react';
+import { toast } from 'sonner'; 
 
 const Login = ({ setUser }) => {
   const navigate = useNavigate();
@@ -13,7 +14,6 @@ const Login = ({ setUser }) => {
     setLoading(true);
 
     try {
-      // FIX: Corrected the backtick in fetch URL
       const res = await fetch(`${API_URL}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -22,18 +22,21 @@ const Login = ({ setUser }) => {
 
       const data = await res.json();
 
-      // 1. RATE LIMIT CHECK (429 Error)
+      // 2. RATE LIMIT CHECK (429 Error) - Changed to toast.error
       if (res.status === 429) {
-          alert(data.message); 
+          toast.error(data.message); 
           setLoading(false);
           return;
       }
       
       if (res.ok) {
-        // User state-ah update panroam
         setUser(data.user); 
         
-        // REDIRECTION LOGIC
+        // 3. SUCCESS TOAST - Welcome message seththurukken
+        toast.success(`Welcome back, ${data.user.name}!`, {
+            description: "Accessing your secure dashboard...",
+        });
+        
         if (data.user.role === 'admin') {
           navigate('/admin-dashboard');
         } else if (data.user.role === 'donor') {
@@ -42,11 +45,12 @@ const Login = ({ setUser }) => {
           navigate('/requester-dashboard');
         }
       } else {
-        alert(data.message || "Invalid Credentials");
+        // Error toast
+        toast.error(data.message || "Invalid Credentials");
       }
     } catch (error) {
       console.error("Login error:", error);
-      alert("Backend connection error. Please check if Render server is waking up.");
+      toast.error("Connection error! Please check if the server is live.");
     } finally {
       setLoading(false);
     }
@@ -137,7 +141,6 @@ const Login = ({ setUser }) => {
   );
 };
 
-// Simple Arrow icon helper
 const ArrowRight = ({size}) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
 );

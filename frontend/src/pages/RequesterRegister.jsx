@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { API_URL } from '../config'; 
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { User, Mail, Phone, Lock, ShieldAlert, ArrowRight, UserPlus, ShieldCheck } from 'lucide-react';
 import OTPModal from '../components/OTPModal';
 
@@ -24,10 +25,10 @@ const RequesterRegister = () => {
       if (res.ok) {
         setShowOTP(true);
       } else {
-        alert(data.message || "Failed to send OTP. Please check your email address.");
+        toast.error(data.message || "Failed to send OTP. Please check your email address.");
       }
     } catch (err) {
-      alert("Network error. Is Flask running?");
+      toast.error("Network error. Is Flask running?");
     } finally {
       setLoading(false);
     }
@@ -49,20 +50,20 @@ const finalizeRegistration = async () => {
       // 1. Success aana Modal-ah close pannidalam
       setShowOTP(false); 
       
-      alert(`Account Verified! Welcome, Your ID is #${data.unique_id}`);
+      toast.success(`Account Verified! Welcome, Your ID is #${data.unique_id}`);
       
       // 2. Adhukku apram login-ku navigate pannalam
       navigate('/login');
     } else {
       // 3. Backend error vandha alert panni, error-ah throw pannanum
-      alert(data.message || "Registration failed.");
+      toast.error(data.message || "Registration failed.");
       throw new Error(data.message || "Registration failed");
     }
   } catch (err) {
     // 4. Network error or throw panna error-ah inga handle panni thirumba throw pannanum
     // Appo thaan OTP Modal-oda loading stop aagum
     if (err.message !== "Registration failed") {
-      alert("Registration error. Try again.");
+      toast.error("Registration error. Try again.");
     }
     throw err; 
   } finally {

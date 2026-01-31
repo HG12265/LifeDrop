@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster, toast } from 'sonner';
 
 // --- Components & Global UI ---
 import Navbar from './components/Navbar';
-import Footer from './components/Footer'; // PUDHU COMPONENT
+import Footer from './components/Footer'; 
 import ChatBot from './components/ChatBot';
+import ConfirmModal from './components/ConfirmModal'; // PUDHU COMPONENT
 
 // --- Pages ---
 import Home from './pages/Home';
@@ -36,6 +38,9 @@ function App() {
     }
   });
 
+  // Modal State
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
   useEffect(() => {
     if (user) {
       localStorage.setItem('lifedrop_user', JSON.stringify(user));
@@ -44,12 +49,17 @@ function App() {
     }
   }, [user]);
 
-  const handleLogout = () => {
-    if(window.confirm("Are you sure you want to logout?")) {
-        setUser(null);
-        localStorage.removeItem('lifedrop_user');
-        alert("Logged out successfully!");
-    }
+  // Trigger Modal
+  const handleLogoutTrigger = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  // Final Logout Action
+  const finalizeLogout = () => {
+    setUser(null);
+    localStorage.removeItem('lifedrop_user');
+    setShowLogoutConfirm(false);
+    toast.success("Logged out successfully!");
   };
 
   return (
@@ -57,12 +67,23 @@ function App() {
       <div className="min-h-screen bg-slate-50 flex flex-col font-sans relative">
         
         {/* Fixed & Global UI Elements */}
-        <Navbar user={user} handleLogout={handleLogout} />
+        <Navbar user={user} handleLogout={handleLogoutTrigger} />
+        <Toaster richColors position="top-center" />
         <ChatBot />
+
+        {/* CUSTOM LOGOUT CONFIRMATION MODAL */}
+        <ConfirmModal 
+          isOpen={showLogoutConfirm}
+          title="Confirm Logout"
+          message="Are you sure you want to sign out? You will need to login again to access your dashboard and alerts."
+          confirmText="YES, LOGOUT"
+          cancelText="STAY LOGGED IN"
+          onConfirm={finalizeLogout}
+          onCancel={() => setShowLogoutConfirm(false)}
+        />
 
         {/* Main Content Area */}
         <main className="flex-grow pt-24 md:pt-28">
-          
           <Routes>
             {/* 1. Public Routes */}
             <Route path="/" element={<Home />} />

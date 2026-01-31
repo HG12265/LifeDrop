@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { API_URL } from '../config'; 
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import LocationPicker from '../components/LocationPicker';
 import SuccessModal from '../components/SuccessModal';
 import OTPModal from '../components/OTPModal'; 
@@ -52,10 +53,10 @@ const DonorRegister = () => {
       if (res.ok) {
         setShowOTP(true);
       } else {
-        alert(data.message || "Failed to send OTP.");
+        toast.error(data.message || "Failed to send OTP.");
       }
     } catch (err) {
-      alert("Error connecting to server. Please check if backend is live.");
+      toast.error("Error connecting to server. Please check if backend is live.");
     } finally {
       setLoading(false);
     }
@@ -83,10 +84,10 @@ const DonorRegister = () => {
         setShowOTP(false);
         setShowModal(true);
       } else {
-        alert(data.message || "Registration failed. Please try again.");
+        toast.error(data.message || "Registration failed. Please try again.");
       }
     } catch (err) {
-      alert("Registration error occurred.");
+      toast.error("Registration error occurred.");
       throw err; // Essential for OTPModal loading state
     } finally {
       setLoading(false);

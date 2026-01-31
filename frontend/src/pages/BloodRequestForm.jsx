@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { API_URL } from '../config'; 
+import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import LocationPicker from '../components/LocationPicker';
 import { AlertCircle, ArrowLeft } from 'lucide-react';
@@ -18,7 +19,7 @@ const handleSubmit = async (e) => {
   console.log("Current User:", user); 
 
   if (!user || !user.unique_id) {
-    alert("Error: User session expired. Please login again.");
+    toast.error("Error: User session expired. Please login again.");
     return;
   }
 
@@ -41,10 +42,10 @@ const handleSubmit = async (e) => {
     const data = await res.json();
 
     if (res.ok) {
-      alert("Request Posted! Loading nearby donors...");
+      toast.info("Request Posted! Loading nearby donors...");
       navigate(`/matching/${data.id}`); 
     } else {
-      alert("Backend Error: " + data.message);
+      toast.error("Backend Error: " + data.message);
     }
   } catch (error) {
     console.error("Fetch error:", error);

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { API_URL } from '../config'; 
+import { toast } from 'sonner';
 import { Mail, User, MessageSquare, Send, ArrowRight, ShieldCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -18,11 +19,11 @@ const Contact = () => {
         body: JSON.stringify(formData)
       });
       if (res.ok) {
-        alert("Thank you! Your suggestion has been sent to Admin.");
+        toast.info("Thank you! Your suggestion has been sent to Admin.");
         setFormData({ name: '', email: '', message: '' });
       }
     } catch (err) {
-      alert("Something went wrong!");
+      toast.error("Something went wrong!");
     } finally {
       setLoading(false);
     }

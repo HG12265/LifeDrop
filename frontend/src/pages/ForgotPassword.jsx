@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { API_URL } from '../config';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { Mail, ShieldCheck, Lock, ArrowRight, KeyRound } from 'lucide-react';
 
 const ForgotPassword = () => {
@@ -21,7 +22,7 @@ const ForgotPassword = () => {
       body: JSON.stringify({ email })
     });
     if (res.ok) setStep(2);
-    else alert("Email not found!");
+    else toast.error("Email not found!");
     setLoading(false);
   };
 
@@ -35,10 +36,10 @@ const ForgotPassword = () => {
       body: JSON.stringify({ email, otp, new_password: newPassword })
     });
     if (res.ok) {
-      alert("Password Reset Success! Please Login.");
+      toast.success("Password Reset Success! Please Login.");
       navigate('/login');
     } else {
-      alert("Invalid OTP or Error!");
+      toast.error("Invalid OTP or Error!");
     }
     setLoading(false);
   };
