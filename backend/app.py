@@ -1391,6 +1391,14 @@ def init_database():
             count = collection.count_documents({})
             print(f"   • {collection_name}: {count} documents, fields: {', '.join(fields)}")
 
+@app.route('/api/admin/init-db', methods=['GET'])
+def manual_init_db():
+    try:
+        init_database() # Namma ezhudhuna full init logic-ah call panroam
+        return jsonify({"message": "Database & Inventory Initialized Successfully! ✅"}), 200
+    except Exception as e:
+        return jsonify({"message": f"Error: {str(e)}"}), 500
+
+# Intha block-ah ippadiye vidunga
 if __name__ == '__main__':
-    init_database()
     app.run(host='0.0.0.0', port=5000, debug=True)
