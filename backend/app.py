@@ -64,6 +64,60 @@ def ratelimit_handler(e):
         "message": "Too many attempts! You are blocked for 10 minutes for security reasons."
     }), 429
 
+def check_login_block(ip_address):
+    attempts_col = get_collection('login_attempts')
+    now = datetime.utcnow()
+
+    # 1. Check if user is currently blocked
+    record = attempts_col.find_one({"ip": ip_address})
+    
+    if record and record.get('blocked_until'):
+        if now < record['blocked_until']:
+            remaining_time = int((record['blocked_until'] - now).total_seconds() / 60)
+            return False, f"Too many attempts! You are blocked. Try again after {remaining_time} minutes."
+        else:
+            # Block time mudinjiduchi, so reset panroam
+            attempts_col.delete_one({"ip": ip_address})
+
+    return True, None
+
+def log_failed_attempt(ip_address):
+    attempts_col = get_collection('login_attempts')
+    now = datetime.utcnow()
+    three_mins_ago = now - timedelta(minutes=3)
+
+    record = attempts_col.find_one({"ip": ip_address})
+
+    if not record:
+        # First time attempt
+        attempts_col.insert_one({
+            "ip": ip_address,
+            "count": 1,
+            "first_attempt": now,
+            "blocked_until": None
+        })
+    else:
+        # Check if the attempts are within 3 minutes
+        if record['first_attempt'] > three_mins_ago:
+            new_count = record['count'] + 1
+            if new_count >= 3:
+                # 3 attempts mudinjiduchi! 10 mins block panroam
+                attempts_col.update_one(
+                    {"ip": ip_address},
+                    {"$set": {"count": new_count, "blocked_until": now + timedelta(minutes=10)}}
+                )
+            else:
+                attempts_col.update_one(
+                    {"ip": ip_address},
+                    {"$inc": {"count": 1}}
+                )
+        else:
+            # 3 mins mela aayiduchi, so fresh-ah start panroam
+            attempts_col.update_one(
+                {"ip": ip_address},
+                {"$set": {"count": 1, "first_attempt": now, "blocked_until": None}}
+            )
+
 def send_brevo_otp(email, otp):
     url = "https://api.brevo.com/v3/smtp/email"
     
@@ -323,50 +377,41 @@ def check_otp_request():
         return jsonify({"success": False, "message": "Invalid or Expired OTP!"}), 400
 
 @app.route('/login', methods=['POST'])
-@limiter.limit("10 per 10 minutes")
 def login():
+    ip_addr = get_remote_address() # User IP address
+    
+    # 1. Check if blocked
+    is_allowed, block_msg = check_login_block(ip_addr)
+    if not is_allowed:
+        return jsonify({"success": False, "message": block_msg}), 429
+
     data = request.json
     email = data['email']
     password = data['password']
     
+    # Admin Check
     if email == "lifedrop108@gmail.com" and password == "lifedrop123":
-        return jsonify({
-            "message": "Admin Login Success",
-            "user": {
-                "name": "Super Admin",
-                "email": email,
-                "role": "admin",
-                "unique_id": "ADMIN"
-            }
-        }), 200
-    
+        return jsonify({"message": "Admin Login Success", "user": {"name": "Super Admin", "role": "admin", "unique_id": "ADMIN"}}), 200
+
+    # User Check
     role = data['role']
-    user = None
-    
-    if role == 'donor':
-        donor_collection = get_collection('donors')
-        user = donor_collection.find_one({"email": email})
-    else:
-        requester_collection = get_collection('requesters')
-        user = requester_collection.find_one({"email": email})
-    
+    user_col = get_collection('donors' if role == 'donor' else 'requesters')
+    user = user_col.find_one({"email": email})
+
     if user and check_password_hash(user['password'], password):
+        # Login Success: Clear attempts
+        get_collection('login_attempts').delete_one({"ip": ip_addr})
+        
         response_data = {
             "message": "Login Success",
-            "user": {
-                "name": user['full_name'],
-                "email": user['email'],
-                "role": role,
-                "unique_id": user['unique_id']
-            }
+            "user": {"name": user['full_name'], "email": user['email'], "role": role, "unique_id": user['unique_id']}
         }
-        
-        if role == 'donor':
-            response_data['user']['bloodGroup'] = user.get('blood_group', '')
-        
+        if role == 'donor': response_data['user']['bloodGroup'] = user.get('blood_group', '')
         return jsonify(response_data), 200
-    
-    return jsonify({"message": "Invalid Credentials"}), 401
+    else:
+        # Login Failed: Log the attempt
+        log_failed_attempt(ip_addr)
+        return jsonify({"message": "Invalid Credentials"}), 401
 
 @app.route('/api/auth/forgot-password', methods=['POST'])
 def forgot_password_request():
