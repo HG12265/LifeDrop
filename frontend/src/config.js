@@ -1,2 +1,2 @@
 // src/config.js
-export const API_URL = "https://lifedrop-sl5r.onrender.com";
+export const API_URL = "https://lifedrop-ai-steel.vercel.app/";
