@@ -297,6 +297,7 @@ def register_donor():
     }
     
     donor_collection.insert_one(new_donor)
+    get_collection('otp_verification').delete_many({"email": data['email']})
     return jsonify({"message": "Donor Registered Successfully", "unique_id": u_id}), 201
 
 @app.route('/register/requester', methods=['POST'])
@@ -323,6 +324,7 @@ def register_requester():
     }
     
     requester_collection.insert_one(new_requester)
+    get_collection('otp_verification').delete_many({"email": data['email']})
     return jsonify({"message": "Success", "unique_id": u_id}), 201
 
 @app.route('/api/verify/send-otp', methods=['POST'])
@@ -371,7 +373,7 @@ def check_otp_request():
     print(f"Checking DB for Email: {email} | User Input: {user_otp}")
 
     if record:
-        otp_collection.delete_one({"_id": record["_id"]})
+        
         return jsonify({"success": True}), 200
     else:
         return jsonify({"success": False, "message": "Invalid or Expired OTP!"}), 400
