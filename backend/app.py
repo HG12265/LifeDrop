@@ -447,35 +447,47 @@ def reset_password_final():
     otp = data.get('otp')
     new_password = data.get('new_password')
 
+    # 1. OTP Verification (Database check)
     otp_collection = get_collection('otp_verification')
     record = otp_collection.find_one({"email": email, "otp": otp})
     
     if not record:
-        return jsonify({"message": "Invalid or Expired OTP!"}), 400
+        return jsonify({"success": False, "message": "Invalid or Expired OTP!"}), 400
 
+    # 2. Hash the new password
+    hashed_password = generate_password_hash(new_password, method='pbkdf2:sha256')
+
+    # 3. Try updating in Donors collection first
     donor_collection = get_collection('donors')
-    requester_collection = get_collection('requesters')
-    
-    user = donor_collection.find_one({"email": email}) or requester_collection.find_one({"email": email})
-    
-    if user:
-        hashed_password = generate_password_hash(new_password, method='pbkdf2:sha256')
-        
-        if 'donors' in str(user.get('_id')):
-            donor_collection.update_one(
-                {"email": email},
-                {"$set": {"password": hashed_password}}
-            )
-        else:
-            requester_collection.update_one(
-                {"email": email},
-                {"$set": {"password": hashed_password}}
-            )
-        
+    # update_one returns a result object
+    donor_result = donor_collection.update_one(
+        {"email": email},
+        {"$set": {"password": hashed_password}}
+    )
+
+    update_done = False
+
+    # matched_count > 0 na donor table-la user irukaaru nu artham
+    if donor_result.matched_count > 0:
+        update_done = True
+    else:
+        # 4. Donor-la illana, Requester collection-la update panna try pannuvom
+        requester_collection = get_collection('requesters')
+        req_result = requester_collection.update_one(
+            {"email": email},
+            {"$set": {"password": hashed_password}}
+        )
+        if req_result.matched_count > 0:
+            update_done = True
+
+    # 5. Final Response logic
+    if update_done:
+        # Success: OTP-ah delete pannittu success message anupuvom
         otp_collection.delete_one({"_id": record["_id"]})
         return jsonify({"success": True, "message": "Password updated successfully!"}), 200
-    
-    return jsonify({"message": "User not found!"}), 404
+    else:
+        # User rendu table-laiyume illana...
+        return jsonify({"success": False, "message": "User account not found!"}), 404
 
 @app.route('/api/donor/<u_id>', methods=['GET'])
 def get_donor_by_id(u_id):

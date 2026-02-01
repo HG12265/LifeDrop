@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { API_URL } from '../config';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
-import { Mail, ShieldCheck, Lock, ArrowRight, KeyRound } from 'lucide-react';
+import { Mail, Lock, ArrowRight, KeyRound, ShieldCheck } from 'lucide-react';
+import { toast } from 'sonner'; // Toast use pannuvom nanba
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
-  const [step, setStep] = useState(1); // 1: Email, 2: OTP, 3: New Password
+  const [step, setStep] = useState(1); 
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -21,12 +21,36 @@ const ForgotPassword = () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email })
     });
-    if (res.ok) setStep(2);
-    else toast.error("Email not found!");
+    const data = await res.json();
+    if (res.ok) {
+      toast.success("OTP sent to your email!");
+      setStep(2);
+    } else {
+      toast.error(data.message || "Email not found!");
+    }
     setLoading(false);
   };
 
-  // Step 2 & 3: Verify and Reset
+  // Step 2: Verify OTP (Intha step thaan munnadi miss aachu)
+  const handleVerifyOTP = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    const res = await fetch(`${API_URL}/api/check-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, otp })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      toast.success("OTP Verified!");
+      setStep(3); // Correct OTP-na mattum thaan step 3-ku pogum
+    } else {
+      toast.error(data.message || "Invalid OTP!");
+    }
+    setLoading(false);
+  };
+
+  // Step 3: Final Reset
   const handleReset = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -35,11 +59,12 @@ const ForgotPassword = () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, otp, new_password: newPassword })
     });
+    const data = await res.json();
     if (res.ok) {
       toast.success("Password Reset Success! Please Login.");
       navigate('/login');
     } else {
-      toast.error("Invalid OTP or Error!");
+      toast.error(data.message || "Error updating password!");
     }
     setLoading(false);
   };
@@ -52,13 +77,13 @@ const ForgotPassword = () => {
             <KeyRound size={32} className="text-red-500" />
           </div>
           <h2 className="text-2xl font-black italic">Account Recovery</h2>
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Reset your secure password</p>
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Secure Password Reset</p>
         </div>
 
         <div className="p-8">
           {step === 1 && (
             <form onSubmit={handleSendOTP} className="space-y-5">
-              <p className="text-xs text-gray-500 text-center mb-4">Enter your registered email to receive a reset code.</p>
+              <p className="text-xs text-gray-500 text-center">Enter your email to receive a reset code.</p>
               <div className="relative">
                 <Mail className="absolute left-4 top-4 text-gray-400" size={18}/>
                 <input type="email" placeholder="Email Address" className="w-full p-4 pl-12 bg-gray-50 rounded-2xl border-none outline-red-200 font-bold" onChange={e => setEmail(e.target.value)} required />
@@ -70,10 +95,12 @@ const ForgotPassword = () => {
           )}
 
           {step === 2 && (
-            <form onSubmit={(e) => { e.preventDefault(); setStep(3); }} className="space-y-5 text-center">
+            <form onSubmit={handleVerifyOTP} className="space-y-5 text-center">
               <p className="text-xs text-gray-500">Enter the 4-digit code sent to <br/><span className="font-bold text-slate-800">{email}</span></p>
               <input type="text" maxLength="4" placeholder="0000" className="w-full p-5 rounded-3xl bg-slate-50 border-2 border-transparent focus:border-red-500 outline-none text-center text-3xl font-black tracking-[15px]" onChange={e => setOtp(e.target.value)} required />
-              <button type="submit" className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black">VERIFY CODE</button>
+              <button type="submit" disabled={loading} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black">
+                {loading ? "VERIFYING..." : "VERIFY CODE"}
+              </button>
             </form>
           )}
 
