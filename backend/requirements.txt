@@ -6,4 +6,3 @@ flask-talisman
 python-dotenv
 flask-pymongo
 dnspython
-gunicorn
