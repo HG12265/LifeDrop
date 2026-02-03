@@ -205,7 +205,7 @@ def init_inventory():
         if not exists:
             inventory_collection.insert_one({
                 "blood_group": g,
-                "units": 1,
+                "units": 0,
                 "last_updated": datetime.utcnow()
             })
 
@@ -465,7 +465,7 @@ def reset_password_final():
     donor_result = donor_collection.update_one(
         {"email": email},
         {"$set": {"password": hashed_password}}
-    )
+    ) 
 
     update_done = False
 
@@ -551,29 +551,6 @@ def get_request_history(u_id):
     
     return jsonify(output)
 
-@app.route('/api/donor/notifications/<blood_group>', methods=['GET'])
-def get_donor_notifications(blood_group):
-    blood_request_collection = get_collection('blood_requests')
-    requester_collection = get_collection('requesters')
-    
-    requests = list(blood_request_collection.find({
-        "blood_group": blood_group,
-        "status": 'Pending'
-    }))
-    
-    output = []
-    for r in requests:
-        req_user = requester_collection.find_one({"unique_id": r['requester_id']})
-        output.append({
-            "id": str(r['_id']),
-            "patient": r['patient_name'],
-            "hospital": r['hospital'],
-            "phone": req_user['phone'] if req_user else "N/A",
-            "date": r['timestamp'].strftime("%I:%M %p")
-        })
-    
-    return jsonify(output)
-
 @app.route('/api/request/create', methods=['POST'])
 def create_request():
     data = request.json
@@ -631,7 +608,7 @@ def match_donors(request_id):
     allowed_donor_groups = BLOOD_COMPATIBILITY.get(req['blood_group'], [req['blood_group']])
     cooldown_limit = datetime.utcnow() - timedelta(days=90)
     
-    # Build query for MongoDB
+    # Build query for MongoDB 
     query = {
         "blood_group": {"$in": allowed_donor_groups},
         "is_available": True,
@@ -669,7 +646,7 @@ def match_donors(request_id):
             "lat": d['lat'],
             "lng": d['lng'],
             "isExact": is_exact
-        })
+        }) 
 
     matches = sorted(matches, key=lambda x: x['match'], reverse=True)
     return jsonify({
@@ -1450,13 +1427,31 @@ def init_database():
             count = collection.count_documents({})
             print(f"   • {collection_name}: {count} documents, fields: {', '.join(fields)}")
 
-@app.route('/api/admin/init-db', methods=['GET'])
-def manual_init_db():
+@app.route('/api/admin/force-inventory', methods=['GET'])
+def force_inventory_init():
     try:
-        init_database() # Namma ezhudhuna full init logic-ah call panroam
-        return jsonify({"message": "Database & Inventory Initialized Successfully! ✅"}), 200
+        inventory_col = get_collection('blood_inventory')
+        groups = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-']
+        
+        count = 0
+        for g in groups:
+            # Check if group already exists
+            exists = inventory_col.find_one({"blood_group": g})
+            if not exists:
+                inventory_col.insert_one({
+                    "blood_group": g,
+                    "units": 0,
+                    "last_updated": datetime.utcnow()
+                })
+                count += 1
+        
+        return jsonify({
+            "status": "success",
+            "message": f"Inventory Fixed! Added {count} groups.",
+            "total_groups": len(groups)
+        }), 200
     except Exception as e:
-        return jsonify({"message": f"Error: {str(e)}"}), 500
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 # Intha block-ah ippadiye vidunga
 if __name__ == '__main__':
