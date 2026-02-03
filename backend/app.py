@@ -205,7 +205,7 @@ def init_inventory():
         if not exists:
             inventory_collection.insert_one({
                 "blood_group": g,
-                "units": 0,
+                "units": 1,
                 "last_updated": datetime.utcnow()
             })
 
