@@ -20,8 +20,12 @@ from dotenv import load_dotenv
 import re
 import dns.resolver
 
-dns.resolver.default_resolver = dns.resolver.Resolver(configure=False)
-dns.resolver.default_resolver.nameservers = ['8.8.8.8']
+if os.path.exists('/data/data/com.termux'):
+    dns.resolver.default_resolver = dns.resolver.Resolver(configure=False)
+    dns.resolver.default_resolver.nameservers = ['8.8.8.8']
+    print("📱 Termux DNS Fix Applied")
+else:
+    print("🌐 Running on Production Server (Render)")
 
 load_dotenv()
 
@@ -1464,4 +1468,4 @@ def force_inventory_init():
 # Intha block-ah ippadiye vidunga
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host='0.0.0.0', port=port)
