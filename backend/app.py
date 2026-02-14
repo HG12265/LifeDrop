@@ -18,6 +18,10 @@ import json
 from time import time
 from dotenv import load_dotenv
 import re
+import dns.resolver
+
+dns.resolver.default_resolver = dns.resolver.Resolver(configure=False)
+dns.resolver.default_resolver.nameservers = ['8.8.8.8']
 
 load_dotenv()
 
@@ -38,11 +42,16 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={GEMINI_API_KEY}"
 
 # MongoDB Configuration
-MONGO_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017/lifedrop")
+MONGO_URI = os.getenv("MONGODB_URI")
+
+if not MONGO_URI:
+    print("❌ ERROR: MONGODB_URI is not set in environment variables!")
+else:
+    print("🌐 Attempting to connect to MongoDB Atlas...")
+
 app.config["MONGO_URI"] = MONGO_URI
 mongo = PyMongo(app)
 
-# Helper function to convert ObjectId to string in JSON responses
 def jsonify_mongo(data):
     return json.loads(json_util.dumps(data))
 
@@ -271,7 +280,6 @@ def register_donor():
     donor_collection = get_collection('donors')
     requester_collection = get_collection('requesters')
     
-    # Check if email exists in either collection
     if donor_collection.find_one({"email": data['email']}) or requester_collection.find_one({"email": data['email']}):
         return jsonify({"message": "This email is already registered, you may login or use different email"}), 400
     
