@@ -18,6 +18,14 @@ import json
 from time import time
 from dotenv import load_dotenv
 import re
+import dns.resolver
+
+if os.path.exists('/data/data/com.termux'):
+    dns.resolver.default_resolver = dns.resolver.Resolver(configure=False)
+    dns.resolver.default_resolver.nameservers = ['8.8.8.8']
+    print("📱 Termux DNS Fix Applied")
+else:
+    print("🌐 Running on Production Server (Render)")
 
 load_dotenv()
 
@@ -39,6 +47,11 @@ GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-fl
 
 # MongoDB Configuration
 MONGO_URI = os.getenv("MONGODB_URI")
+
+if not MONGO_URI:
+    print("❌ ERROR: MONGODB_URI is not set in environment variables!")
+else:
+    print("🌐 Attempting to connect to MongoDB Atlas...")
 
 app.config["MONGO_URI"] = MONGO_URI
 mongo = PyMongo(app)
