@@ -1,1 +1,1 @@
-export const API_URL = "https://lifedrop-hfha.onrender.com/";
+export const API_URL = "https://lifedrop-ai.onrender.com/";
